@@ -10,22 +10,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #0a0a0a;
-  --surface: #141414;
-  --surface2: #1e1e1e;
-  --border: #2a2a2a;
-  --text: #f0f0f0;
-  --muted: #666;
-  --muted2: #999;
-  --accent: #4a8ce4;
-  --accent-dim: rgba(74,140,228,0.15);
-  --accent-border: rgba(74,140,228,0.35);
-  --green: #22c55e;
-  --green-dim: rgba(34,197,94,0.15);
-  --yellow: #f59e0b;
-  --yellow-dim: rgba(245,158,11,0.15);
-  --red: #ef4444;
-  --red-dim: rgba(239,68,68,0.15);
+  --bg: #0E1111;
+  --surface: #151A1A;
+  --surface2: #1C2323;
+  --border: #263030;
+  --text: #E6F1F0;
+  --muted: #6B7D7A;
+  --muted2: #9FB3B0;
+  --accent: #2F8F83;
+  --accent-dim: rgba(47,143,131,0.15);
+  --accent-border: rgba(47,143,131,0.35);
+  --green: #3D9B66;
+  --green-dim: rgba(61,155,102,0.15);
+  --yellow: #B8843A;
+  --yellow-dim: rgba(184,132,58,0.15);
+  --red: #A84040;
+  --red-dim: rgba(168,64,64,0.15);
   --radius: 12px;
   --radius-sm: 8px;
   --tab-h: 60px;
@@ -39,7 +39,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 /* TOP BAR */
 .top-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;padding-top:calc(10px + var(--safe-t));background:var(--bg);position:sticky;top:0;z-index:20;border-bottom:1px solid var(--border)}
 .top-bar-left{display:flex;flex-direction:column;gap:2px}
-.app-name{font-size:13px;font-weight:800;letter-spacing:2px;color:var(--accent);text-transform:uppercase}
+.app-name{font-size:16px;font-weight:600;letter-spacing:0;color:var(--text)}
 .top-meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted2)}
 .top-meta .block-week{font-weight:600;color:var(--text)}
 .top-meta .race-days{color:var(--accent);font-weight:600}
@@ -59,7 +59,7 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--tab-h) +
 
 /* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:calc(var(--tab-h) + var(--safe-b));padding-bottom:var(--safe-b);background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:20}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--muted);transition:color .15s;font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--muted);transition:color .15s;font-size:10px;font-weight:500;letter-spacing:0}
 .nav-item.active{color:var(--accent)}
 .nav-item svg{width:22px;height:22px;stroke-width:1.8}
 
@@ -67,11 +67,11 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--tab-h) +
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin:0 16px 12px}
 .card-accent{border-color:var(--accent-border);background:color-mix(in srgb,var(--surface) 90%,var(--accent) 10%)}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.card-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted2)}
+.card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)}
 .card-title-lg{font-size:15px;font-weight:700;color:var(--text)}
 
 /* SECTION HEADERS */
-.section-header{padding:16px 16px 8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.section-header{padding:16px 16px 8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)}
 
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;padding:10px 18px;transition:all .15s;white-space:nowrap}
@@ -80,7 +80,7 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--tab-h) +
 .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
 .btn-secondary:active{background:var(--border)}
 .btn-ghost{background:transparent;color:var(--accent);padding:6px 10px}
-.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(168,64,64,.3)}
 .btn-sm{font-size:12px;padding:6px 12px;border-radius:6px}
 .btn-full{width:100%}
 .btn-icon{width:34px;height:34px;padding:0;border-radius:50%}
@@ -91,7 +91,7 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--tab-h) +
 .input::placeholder{color:var(--muted)}
 .input-sm{font-size:13px;padding:7px 10px}
 select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
-.label{font-size:12px;font-weight:600;color:var(--muted2);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.label{font-size:11px;font-weight:600;color:var(--muted2);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:0.04em}
 .input-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 .input-row{display:grid;gap:10px;margin-bottom:12px}
 .input-row-2{grid-template-columns:1fr 1fr}
@@ -119,7 +119,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 /* WEEK STRIP */
 .week-strip{display:flex;align-items:center;padding:10px 12px;gap:4px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border)}
 .week-strip::-webkit-scrollbar{display:none}
-.week-month-label{text-align:center;padding:10px 16px 2px;font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px}
+.week-month-label{text-align:center;padding:10px 16px 2px;font-size:12px;font-weight:500;color:var(--muted2)}
 .week-nav-btn{background:none;border:none;color:var(--muted2);font-size:18px;cursor:pointer;padding:4px 6px;flex-shrink:0}
 .day-chip{flex:1;min-width:40px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s}
 .day-chip .day-name{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
@@ -138,14 +138,14 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 
 /* BANNERS */
 .banner{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin:12px 16px;font-size:14px}
-.banner-green{background:var(--green-dim);border:1px solid rgba(34,197,94,.3);color:var(--green)}
-.banner-yellow{background:var(--yellow-dim);border:1px solid rgba(245,158,11,.3);color:var(--yellow)}
-.banner-red{background:var(--red-dim);border:1px solid rgba(239,68,68,.3);color:var(--red)}
+.banner-green{background:var(--green-dim);border:1px solid rgba(61,155,102,.3);color:var(--green)}
+.banner-yellow{background:var(--yellow-dim);border:1px solid rgba(184,132,58,.3);color:var(--yellow)}
+.banner-red{background:var(--red-dim);border:1px solid rgba(168,64,64,.3);color:var(--red)}
 .banner-blue{background:var(--accent-dim);border:1px solid var(--accent-border);color:var(--accent)}
 
 /* AI ADVICE CARD */
 .advice-card{background:var(--surface);border:1px solid var(--accent-border);border-radius:var(--radius);padding:14px;margin:0 16px 12px}
-.advice-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--accent)}
+.advice-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent)}
 .advice-body{font-size:14px;line-height:1.6;color:var(--muted2)}
 .advice-loading{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px}
 .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
@@ -231,7 +231,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 /* WEEK VIEW GRID */
 .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:12px 16px}
 .week-cell{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-height:70px;transition:border-color .15s}
-.week-cell.has-morning{border-color:rgba(74,140,228,.4)}
+.week-cell.has-morning{border-color:rgba(47,143,131,.4)}
 .week-cell.today-cell{border-color:var(--accent);background:var(--accent-dim)}
 .week-cell .wc-name{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase}
 .week-cell .wc-num{font-size:14px;font-weight:700;color:var(--text)}
@@ -255,12 +255,12 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 
 /* SETTINGS */
 .settings-section{margin-bottom:20px}
-.settings-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.settings-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .shoe-item{display:flex;align-items:center;gap:8px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px}
 .shoe-item-name{flex:1;font-size:14px;font-weight:600}
 
 /* SUNDAY WEIGH-IN */
-.weigh-in-banner{background:linear-gradient(135deg,rgba(74,140,228,.2),rgba(74,140,228,.05));border:1px solid var(--accent-border);border-radius:var(--radius);padding:16px;margin:0 16px 12px;display:flex;align-items:center;gap:12px}
+.weigh-in-banner{background:linear-gradient(135deg,rgba(47,143,131,.2),rgba(47,143,131,.05));border:1px solid var(--accent-border);border-radius:var(--radius);padding:16px;margin:0 16px 12px;display:flex;align-items:center;gap:12px}
 .weigh-in-icon{font-size:28px}
 .weigh-in-text{flex:1}
 .weigh-in-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px}
@@ -357,9 +357,8 @@ let S = {
   settings: {
     apiKey: '',
     raceDate: '2026-06-01',
+    trainStart: '2026-03-16',
     weight: 163,
-    block: 1,
-    week: 1,
     shoes: [],
     macroTargets: { cal: 2400, pro: 180, carb: 250, fat: 80 }
   },
@@ -578,24 +577,10 @@ function renderTodayContent() {
       <button class="week-nav-btn" onclick="S.weekOffset++;renderTodayContent()" ${S.weekOffset>=0?'style="color:var(--muted)"':''}>›</button>
     </div>`;
 
-  // View toggle
-  const toggleHTML = `
-    <div class="view-toggle">
-      <button class="view-toggle-btn ${S.calView==='day'?'active':''}" onclick="S.calView='day';renderTodayContent()">Day</button>
-      <button class="view-toggle-btn ${S.calView==='week'?'active':''}" onclick="S.calView='week';renderTodayContent()">Week</button>
-    </div>`;
-
-  let contentHTML = '';
-  if (S.calView === 'week') {
-    contentHTML = renderWeekView(days);
-  } else {
-    contentHTML = renderDayView(S.selDate);
-  }
-
-  el.innerHTML = stripHTML + toggleHTML + contentHTML;
+  el.innerHTML = stripHTML + renderDayView(S.selDate);
 
   // Trigger advice if morning logged but no advice yet
-  if (S.calView==='day' && hasMorning(S.selDate) && !S.summaries[S.selDate+'-advice'] && S.settings.apiKey) {
+  if (hasMorning(S.selDate) && !S.summaries[S.selDate+'-advice'] && S.settings.apiKey) {
     getAdvice(S.selDate);
   }
 }
@@ -641,11 +626,16 @@ function renderDayView(d) {
   // Readiness banner
   if (m && m.hrv) {
     const color = m.hrv==='green'?'green':m.hrv==='yellow'?'yellow':'red';
-    const emoji = m.hrv==='green'?'🟢':m.hrv==='yellow'?'🟡':'🔴';
-    const msg = m.hrv==='green'?'HRV Good — Push today':m.hrv==='yellow'?'HRV Moderate — Train smart':'HRV Low — Prioritize recovery';
-    html += `<div class="banner banner-${color}">
-      <span>${emoji}</span>
-      <span><strong>${msg}</strong>${m.recovery?` · Recovery ${m.recovery}/5`:''}</span>
+    const label = m.hrv==='green'?'Good readiness':m.hrv==='yellow'?'Moderate readiness':'Low readiness';
+    const sub = m.hrv==='green'?'HRV green':m.hrv==='yellow'?'HRV orange':'HRV red';
+    html += `<div class="banner banner-${color}" style="justify-content:space-between">
+      <span style="font-weight:600">${label}</span>
+      <span style="font-size:12px;opacity:.8">${sub}${m.recovery?` · ${m.recovery}/5`:''}</span>
+    </div>`;
+  } else if (isToday) {
+    html += `<div class="banner banner-blue" style="cursor:pointer;justify-content:space-between" onclick="switchTab('health')">
+      <span style="font-size:13px">Log morning check-in to see readiness</span>
+      <span style="font-size:12px;opacity:.7">Health →</span>
     </div>`;
   }
 
@@ -1106,24 +1096,36 @@ function saveWorkout() {
 }
 
 // ─── TOP BAR ─────────────────────────────────────────────────
+function currentWeekNum() {
+  const start = S.settings.trainStart;
+  if (!start) return null;
+  const diffDays = Math.floor((new Date(today()+'T12:00:00') - new Date(start+'T12:00:00')) / (1000*60*60*24));
+  return Math.max(1, Math.floor(diffDays/7) + 1);
+}
+function totalWeekNum() {
+  const start = S.settings.trainStart, race = S.settings.raceDate;
+  if (!start || !race) return null;
+  return Math.ceil((new Date(race+'T12:00:00') - new Date(start+'T12:00:00')) / (1000*60*60*24*7));
+}
 function renderTopBar() {
   const days = daysUntil(S.settings.raceDate);
   const log = S.logs[S.selDate];
   const hrv = log?.morning?.hrv;
   const hClass = hrv==='green'?'hrv-green':hrv==='yellow'?'hrv-yellow':hrv==='red'?'hrv-red':'hrv-none';
+  const wk = currentWeekNum(), tot = totalWeekNum();
+  const weekLabel = wk && tot ? `Week ${wk} of ${tot}` : '';
   document.getElementById('topBar').innerHTML = `
     <div class="top-bar-left">
       <div class="app-name">I'll Quit Tomorrow</div>
       <div class="top-meta">
-        <span class="block-week">B${S.settings.block} · W${S.settings.week}</span>
-        <span>·</span>
+        ${weekLabel?`<span class="block-week">${weekLabel}</span><span>·</span>`:''}
         <div class="hrv-dot ${hClass}" title="HRV: ${hrv||'not logged'}"></div>
         <span>·</span>
-        <span class="race-days">${days}d</span>
+        <span class="race-days">${days}d to race</span>
       </div>
     </div>
     <div class="top-bar-right">
-      <button class="icon-btn" style="background:transparent;border-color:transparent" onclick="openModal('settingsModal');renderSettingsContent()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18" stroke-width="1.6"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="6" r="2.5" fill="var(--bg)" stroke="currentColor"/><circle cx="15" cy="12" r="2.5" fill="var(--bg)" stroke="currentColor"/><circle cx="9" cy="18" r="2.5" fill="var(--bg)" stroke="currentColor"/></svg></button>
+      <button class="icon-btn" style="background:transparent;border-color:transparent;color:var(--muted2)" onclick="openModal('settingsModal');renderSettingsContent()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
     </div>
   `;
 }
@@ -1195,9 +1197,9 @@ function renderProgressContent() {
     if (w) weightData.push({x:d, y:w});
   });
 
-  // Shoe mileage
+  // Shoe mileage (base = manually added extraMiles, auto += Garmin sessions)
   const shoeMiles = {};
-  S.settings.shoes.forEach(shoe=>{ shoeMiles[shoe.id]=0; });
+  S.settings.shoes.forEach(shoe=>{ shoeMiles[shoe.id] = shoe.extraMiles || 0; });
   sortedDates.forEach(d=>{
     const log = S.logs[d];
     const shoeId = log?.session?.shoeId;
@@ -1225,13 +1227,14 @@ function renderProgressContent() {
     </div>
 
     ${S.settings.shoes.length?`
-    <div class="section-header">Shoe Mileage</div>
+    <div class="section-header">Shoe mileage</div>
     <div class="card">
       ${S.settings.shoes.map(shoe=>`
-        <div class="shoe-bar-row">
+        <div class="shoe-bar-row" style="align-items:center">
           <div class="shoe-bar-name">${shoe.name}</div>
           <div class="shoe-bar-track"><div class="shoe-bar-fill" style="width:${Math.round((shoeMiles[shoe.id]||0)/Math.max(500,shoeMiles[shoe.id]||1)*100)}%"></div></div>
           <div class="shoe-bar-miles">${(shoeMiles[shoe.id]||0).toFixed(1)} mi</div>
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;flex-shrink:0" onclick="addShoeMiles('${shoe.id}','${shoe.name.replace(/'/g,"\\'")}')">+ miles</button>
         </div>`).join('')}
     </div>`:''}
   `;
@@ -1242,16 +1245,16 @@ function renderProgressContent() {
       const ctx = document.getElementById('paceChart');
       if (ctx) new Chart(ctx, {
         type:'line',
-        data:{labels:paceData.map(p=>fmtDate(p.x)),datasets:[{label:'Pace (min/mi)',data:paceData.map(p=>p.y),borderColor:'#4a8ce4',backgroundColor:'rgba(74,140,228,0.1)',fill:true,tension:.3,pointBackgroundColor:'#4a8ce4',pointRadius:4}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{reverse:true,ticks:{color:'#666',callback:v=>{const m=Math.floor(v);const s=Math.round((v-m)*60);return m+':'+(s<10?'0':'')+s}},grid:{color:'#2a2a2a'}},x:{ticks:{color:'#666',maxTicksLimit:6},grid:{color:'#2a2a2a'}}}}
+        data:{labels:paceData.map(p=>fmtDate(p.x)),datasets:[{label:'Pace (min/mi)',data:paceData.map(p=>p.y),borderColor:'#2F8F83',backgroundColor:'rgba(47,143,131,0.1)',fill:true,tension:.3,pointBackgroundColor:'#2F8F83',pointRadius:4}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{reverse:true,ticks:{color:'#6B7D7A',callback:v=>{const m=Math.floor(v);const s=Math.round((v-m)*60);return m+':'+(s<10?'0':'')+s}},grid:{color:'#263030'}},x:{ticks:{color:'#6B7D7A',maxTicksLimit:6},grid:{color:'#263030'}}}}
       });
     }
     if (weightData.length) {
       const ctx = document.getElementById('weightChart');
       if (ctx) new Chart(ctx, {
         type:'line',
-        data:{labels:weightData.map(p=>fmtDate(p.x)),datasets:[{label:'Weight (lbs)',data:weightData.map(p=>p.y),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.1)',fill:true,tension:.3,pointBackgroundColor:'#22c55e',pointRadius:4}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#666'},grid:{color:'#2a2a2a'}},x:{ticks:{color:'#666',maxTicksLimit:6},grid:{color:'#2a2a2a'}}}}
+        data:{labels:weightData.map(p=>fmtDate(p.x)),datasets:[{label:'Weight (lbs)',data:weightData.map(p=>p.y),borderColor:'#3D9B66',backgroundColor:'rgba(61,155,102,0.1)',fill:true,tension:.3,pointBackgroundColor:'#3D9B66',pointRadius:4}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#6B7D7A'},grid:{color:'#263030'}},x:{ticks:{color:'#6B7D7A',maxTicksLimit:6},grid:{color:'#263030'}}}}
       });
     }
   }, 50);
@@ -1371,12 +1374,11 @@ function renderSettingsContent() {
     <div class="settings-section">
       <div class="settings-section-title">Training Info</div>
       <div class="input-row input-row-2">
-        <div class="input-group" style="margin:0"><label class="label">Race Date</label><input class="input" type="date" value="${s.raceDate||'2026-06-01'}" oninput="S.settings.raceDate=this.value;save();renderTopBar()"></div>
-        <div class="input-group" style="margin:0"><label class="label">Body Weight (lbs)</label><input class="input" type="number" step="0.1" placeholder="163" value="${s.weight||''}" oninput="S.settings.weight=+this.value||163;save()"></div>
+        <div class="input-group" style="margin:0"><label class="label">Training start</label><input class="input" type="date" value="${s.trainStart||'2026-03-16'}" oninput="S.settings.trainStart=this.value;save();renderTopBar()"></div>
+        <div class="input-group" style="margin:0"><label class="label">Race date</label><input class="input" type="date" value="${s.raceDate||'2026-06-01'}" oninput="S.settings.raceDate=this.value;save();renderTopBar()"></div>
       </div>
       <div class="input-row input-row-2">
-        <div class="input-group" style="margin:0"><label class="label">Block</label><input class="input" type="number" min="1" placeholder="1" value="${s.block||1}" oninput="S.settings.block=+this.value||1;save();renderTopBar()"></div>
-        <div class="input-group" style="margin:0"><label class="label">Week</label><input class="input" type="number" min="1" placeholder="1" value="${s.week||1}" oninput="S.settings.week=+this.value||1;save();renderTopBar()"></div>
+        <div class="input-group" style="margin:0"><label class="label">Body weight (lbs)</label><input class="input" type="number" step="0.1" placeholder="163" value="${s.weight||''}" oninput="S.settings.weight=+this.value||163;save()"></div>
       </div>
     </div>
 
@@ -1402,6 +1404,17 @@ function renderSettingsContent() {
       </div>
     </div>
   `;
+}
+
+function addShoeMiles(shoeId, shoeName) {
+  const val = prompt(`Add miles to ${shoeName}:`);
+  if (!val) return;
+  const miles = parseFloat(val);
+  if (isNaN(miles) || miles <= 0) { showToast('Enter a valid number'); return; }
+  const shoe = S.settings.shoes.find(s=>s.id===shoeId);
+  if (!shoe) return;
+  shoe.extraMiles = (shoe.extraMiles || 0) + miles;
+  save(); renderProgressContent(); showToast(`Added ${miles} mi to ${shoeName}`);
 }
 
 function addShoe() {
