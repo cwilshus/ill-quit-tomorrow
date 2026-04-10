@@ -177,6 +177,13 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 .set-x{color:var(--muted)}
 .prev-hint{font-size:11px;color:var(--muted);margin-bottom:6px;padding:4px 8px;background:var(--surface);border-radius:4px;display:flex;align-items:center;gap:4px}
 
+/* UPLOAD ZONE */
+.upload-zone{border:1.5px dashed var(--border);border-radius:var(--radius-sm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px 16px;cursor:pointer;color:var(--muted);transition:border-color .15s;text-align:center;width:100%}
+.upload-zone:active{border-color:var(--accent);color:var(--accent)}
+.upload-zone-icon{color:var(--accent)}
+.upload-zone-label{font-size:14px;font-weight:500;color:var(--text)}
+.upload-zone-sub{font-size:12px;color:var(--muted)}
+
 /* GARMIN */
 .garmin-session{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px}
 .img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
@@ -418,6 +425,8 @@ function hasNutrition(d) { const n=S.logs[d]?.nutrition; return n && (n.cal||n.p
 
 // ─── UTILS ───────────────────────────────────────────────────
 function uid() { return Math.random().toString(36).slice(2,9); }
+function sparkIcon(size=13) { return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M13 2L4.5 13.5H12L11 22L19.5 10.5H12L13 2z"/></svg>`; }
+function uploadIcon(size=24) { return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>`; }
 
 function showToast(msg, dur=2500) {
   const t = document.getElementById('toast');
@@ -549,6 +558,71 @@ Give brief, specific pre-workout coaching advice for today. 2-3 sentences max. B
   if (S.tab === 'today') renderTodayContent();
 }
 
+async function generateWeeklySnapshot(date) {
+  const key = 'snapshot-'+date;
+  S.summaries[key] = 'loading';
+  if (S.tab==='today') renderTodayContent();
+  const lines = [];
+  for (let i=6; i>=0; i--) {
+    const d = addDays(date,-i);
+    const log = S.logs[d];
+    if (!log) continue;
+    const m = log.morning||{};
+    const ws = log.session?.workouts||[];
+    const hrv = m.hrv||'—';
+    const workoutSummary = ws.map(w=>`${w.type}: ${w.name}${w.result?' ('+w.result+')':''}${w.rpe?' RPE'+w.rpe:''}`).join('; ');
+    const garminDist = (log.garmin?.sessions||[]).map(s=>s.manual?.dist).filter(Boolean).join('+');
+    if (m.hrv||ws.length) lines.push(`${fmtDay(d)} (${d}): HRV=${hrv}, Sleep=${m.sleepScore||'—'}, Recovery=${m.recovery||'—'}/5${ws.length?' | '+workoutSummary:''}${garminDist?' | '+garminDist+' mi':''}`);
+  }
+  const prompt = `${athleteCtx()}
+
+Last 7 days training log:
+${lines.join('\n')||'No data logged yet.'}
+
+You are the world's best hybrid fitness coach. Give a concise but insightful weekly performance snapshot (4-6 sentences). Cover: training consistency, recovery quality, what's working, one specific thing to adjust next week. Be direct and coach-like — no generic encouragement.`;
+  try {
+    const text = await aiText(prompt);
+    S.summaries[key] = text;
+  } catch(e) {
+    S.summaries[key] = 'Error generating snapshot: '+e.message;
+  }
+  save();
+  if (S.tab==='today') renderTodayContent();
+}
+
+async function generateCoachSummary() {
+  const d = today();
+  const key = 'coach-summary-'+d;
+  S.summaries[key] = 'loading';
+  if (S.tab==='plan') renderPlanContent();
+  const lines = [];
+  for (let i=6; i>=0; i--) {
+    const dd = addDays(d,-i);
+    const log = S.logs[dd];
+    if (!log) continue;
+    const m = log.morning||{};
+    const ws = log.session?.workouts||[];
+    const hrv = m.hrv||'—';
+    const workoutSummary = ws.map(w=>`${w.type}: ${w.name}${w.result?' ('+w.result+')':''}${w.rpe?' RPE'+w.rpe:''}`).join('; ');
+    const garminDist = (log.garmin?.sessions||[]).map(s=>s.manual?.dist).filter(Boolean).join('+');
+    if (m.hrv||ws.length) lines.push(`${fmtDay(dd)} (${dd}): HRV=${hrv}, Sleep=${m.sleepScore||'—'}, Recovery=${m.recovery||'—'}/5${ws.length?' | '+workoutSummary:''}${garminDist?' | '+garminDist+' mi':''}`);
+  }
+  const prompt = `${athleteCtx()}
+
+Last 7 days training log:
+${lines.join('\n')||'No data logged yet.'}
+
+You are the world's best hybrid fitness coach. Give a concise but insightful weekly performance snapshot (4-6 sentences). Cover: training consistency, recovery quality, what's working, one specific thing to adjust next week. Be direct and coach-like — no generic encouragement.`;
+  try {
+    const text = await aiText(prompt);
+    S.summaries[key] = text;
+  } catch(e) {
+    S.summaries[key] = 'Error: '+e.message;
+  }
+  save();
+  if (S.tab==='plan') renderPlanContent();
+}
+
 // ─── TODAY TAB ────────────────────────────────────────────────
 function renderTodayContent() {
   const el = document.getElementById('tab-today');
@@ -614,7 +688,7 @@ function renderDayView(d) {
   // Sunday weigh-in prompt
   if (isSunday(d) && (!m || !m.weight)) {
     html += `<div class="weigh-in-banner">
-      <div class="weigh-in-icon">⚖️</div>
+      <div class="weigh-in-icon" style="color:var(--accent)"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 10h2l2-3 2 6 2-3h2"/></svg></div>
       <div class="weigh-in-text">
         <div class="weigh-in-title">Sunday Weigh-In</div>
         <div class="weigh-in-sub">Log your weight in Health → Morning Check-In</div>
@@ -641,13 +715,26 @@ function renderDayView(d) {
 
   // AI Advice
   if (!S.settings.apiKey) {
-    html += `<div class="card card-accent"><div class="advice-header">⚡ AI Coach</div><div class="advice-body text-muted">Add your API key in Settings to get daily coaching advice.</div></div>`;
+    html += `<div class="card card-accent"><div class="advice-header">${sparkIcon()} AI Coach</div><div class="advice-body text-muted">Add your API key in Settings to get daily coaching advice.</div></div>`;
   } else if (!hasMorning(d)) {
-    html += `<div class="card card-accent"><div class="advice-header">⚡ AI Coach</div><div class="advice-body text-muted">Complete your morning check-in in Health to get today's advice.</div></div>`;
+    html += `<div class="card card-accent"><div class="advice-header">${sparkIcon()} AI Coach</div><div class="advice-body text-muted">Complete your morning check-in in Health to get today's advice.</div></div>`;
   } else if (S.summaries[d+'-advice'] === 'loading') {
-    html += `<div class="advice-card"><div class="advice-header">⚡ AI Coach</div><div class="advice-loading"><div class="spinner"></div> Analyzing your data...</div></div>`;
+    html += `<div class="advice-card"><div class="advice-header">${sparkIcon()} AI Coach</div><div class="advice-loading"><div class="spinner"></div> Analyzing your data...</div></div>`;
   } else if (S.summaries[d+'-advice']) {
-    html += `<div class="advice-card"><div class="advice-header">⚡ AI Coach — ${fmtDay(d)} Advice</div><div class="advice-body">${S.summaries[d+'-advice']}</div></div>`;
+    html += `<div class="advice-card"><div class="advice-header">${sparkIcon()} AI Coach — ${fmtDay(d)} Advice</div><div class="advice-body">${S.summaries[d+'-advice']}</div></div>`;
+  }
+
+  // Weekly snapshot (today only)
+  if (isToday && S.settings.apiKey) {
+    const snapKey = 'snapshot-'+d;
+    const snap = S.summaries[snapKey];
+    html += `<div class="advice-card">
+      <div class="advice-header" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">${sparkIcon()} Weekly snapshot</span>
+        <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:11px" onclick="generateWeeklySnapshot('${d}')">${snap&&snap!=='loading'?'Refresh':'Generate'}</button>
+      </div>
+      ${snap==='loading'?`<div class="advice-loading"><div class="spinner"></div> Analyzing your week...</div>`:snap?`<div class="advice-body">${snap.replace(/\n/g,'<br>')}</div>`:`<div class="advice-body text-muted" style="font-size:13px">Tap Generate for a weekly performance summary from your coach.</div>`}
+    </div>`;
   }
 
   // Scheduled workout type
@@ -665,18 +752,21 @@ function renderDayView(d) {
   // Session summary
   if (hasSession(d)) {
     const session = log.session;
-    const shoe = S.settings.shoes.find(s=>s.id===session.shoeId);
     html += `<div class="card">
       <div class="card-header"><span class="card-title">Session</span><button class="btn btn-ghost btn-sm" onclick="S.logSubTab='session';switchTab('log')">Edit</button></div>
       ${session.soreness?.length?`<div class="text-sm text-muted mb-2">Soreness: ${session.soreness.join(', ')}</div>`:''}
-      ${session.workouts.map(w=>`
-        <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      ${session.workouts.map(w=>{
+        const wShoe = S.settings.shoes.find(s=>s.id===w.shoeId);
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
           <span class="workout-type-badge badge-${TYPE_BADGE[w.type]||'gpp'}">${w.type}</span>
           <div style="font-size:14px;font-weight:600;margin-bottom:2px">${w.name}</div>
           ${w.result?`<div class="text-sm text-muted">${w.result}</div>`:''}
-          ${w.rpe?`<div class="text-sm" style="color:var(--accent)">RPE ${w.rpe}/10</div>`:''}
-        </div>`).join('')}
-      ${shoe?`<div class="text-sm text-muted mt-2">👟 ${shoe.name}</div>`:''}
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            ${w.rpe?`<div class="text-sm" style="color:var(--accent)">RPE ${w.rpe}/10</div>`:''}
+            ${wShoe?`<div class="text-sm text-muted">${wShoe.name}</div>`:''}
+          </div>
+        </div>`;
+      }).join('')}
     </div>`;
   }
 
@@ -856,15 +946,17 @@ function renderLogSession() {
       ${(w.movements||[]).length?`<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:8px">${w.movements.map(mv=>`<div class="movement-row" style="padding:6px 8px"><span class="movement-name">${mv.name}</span><span class="movement-target">${mv.target||''}</span><span class="movement-actual">${mv.actual||'—'}</span></div>`).join('')}</div>`:''}
       ${(w.exercises||[]).length?`<div style="margin-bottom:8px">${w.exercises.map(ex=>`<div style="margin-bottom:6px"><div style="font-size:13px;font-weight:600;margin-bottom:3px">${ex.name}</div><div style="display:flex;flex-wrap:wrap;gap:4px">${(ex.sets||[]).map(s=>`<span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:12px">${s.w||'—'}×${s.r||'—'}</span>`).join('')}</div></div>`).join('')}</div>`:''}
       ${w.result?`<div style="font-size:13px;padding:6px 8px;background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:6px;margin-bottom:6px"><strong>Result:</strong> ${w.result}</div>`:''}
-      ${w.rpe?`<div class="text-sm" style="color:var(--accent)">RPE ${w.rpe}/10</div>`:''}
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${w.rpe?`<div class="text-sm" style="color:var(--accent)">RPE ${w.rpe}/10</div>`:''}
+        ${w.shoeId&&S.settings.shoes.find(s=>s.id===w.shoeId)?`<div class="text-sm text-muted">${S.settings.shoes.find(s=>s.id===w.shoeId).name}</div>`:''}
+      </div>
     </div>`).join('');
   return `
     <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
       <span>Session · ${fmtDate(d)}</span><span style="font-size:12px;color:var(--muted2)">${fmtDay(d)}</span>
     </div>
     <div class="card">
-      <div class="input-group"><label class="label">Soreness</label><div class="chip-group">${soreChips}</div></div>
-      ${S.settings.shoes.length?`<div class="input-group" style="margin-top:8px"><label class="label">Shoes</label><select class="input" onchange="dayLog('${d}').session.shoeId=this.value||null;save()"><option value="">No shoe selected</option>${shoeOpts}</select></div>`:''}
+      <div class="input-group" style="margin:0"><label class="label">Soreness</label><div class="chip-group">${soreChips}</div></div>
     </div>
     <div style="padding:0 16px">
       ${workoutCards}
@@ -886,7 +978,7 @@ function renderLogGarmin() {
         <button class="btn btn-danger btn-sm" onclick="deleteGarminSession('${d}',${i})">✕</button>
       </div>
       <div class="img-grid">${imgThumbs}<div class="img-add" onclick="addGarminImg('${d}',${i})">+</div></div>
-      ${(s.imgs||[]).length?`<button class="btn btn-secondary btn-full btn-sm" style="margin-top:6px" onclick="analyzeGarminSession('${d}',${i})">⚡ Analyze with AI</button>`:''}
+      ${(s.imgs||[]).length?`<button class="btn btn-secondary btn-full btn-sm" style="margin-top:6px" onclick="analyzeGarminSession('${d}',${i})">${sparkIcon()} Analyze with AI</button>`:''}
       ${s.aiSummary?`<div style="margin-top:8px;padding:8px;background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:6px;font-size:13px">${s.aiSummary}</div>`:''}
       <div class="input-row input-row-2 mt-2">
         <div class="input-group" style="margin:0"><label class="label">Dist (mi)</label><input class="input input-sm" type="number" step="0.01" placeholder="5.2" value="${s.manual?.dist||''}" oninput="dayLog('${d}').garmin.sessions[${i}].manual=dayLog('${d}').garmin.sessions[${i}].manual||{};dayLog('${d}').garmin.sessions[${i}].manual.dist=this.value;save()"></div>
@@ -896,6 +988,7 @@ function renderLogGarmin() {
         <div class="input-group" style="margin:0"><label class="label">Avg HR</label><input class="input input-sm" type="number" placeholder="148" value="${s.manual?.hr||''}" oninput="dayLog('${d}').garmin.sessions[${i}].manual=dayLog('${d}').garmin.sessions[${i}].manual||{};dayLog('${d}').garmin.sessions[${i}].manual.hr=this.value;save()"></div>
         <div class="input-group" style="margin:0"><label class="label">Cadence</label><input class="input input-sm" type="number" placeholder="172" value="${s.manual?.cad||''}" oninput="dayLog('${d}').garmin.sessions[${i}].manual=dayLog('${d}').garmin.sessions[${i}].manual||{};dayLog('${d}').garmin.sessions[${i}].manual.cad=this.value;save()"></div>
       </div>
+      ${S.settings.shoes.length?`<div class="input-group" style="margin:4px 0 0"><label class="label">Shoes worn</label><select class="input input-sm" onchange="dayLog('${d}').garmin.sessions[${i}].shoeId=this.value||null;save()"><option value="">No shoe</option>${S.settings.shoes.map(sh=>`<option value="${sh.id}" ${s.shoeId===sh.id?'selected':''}>${sh.name}</option>`).join('')}</select></div>`:''}
     </div>`;
   }).join('');
   return `<div class="section-header">Garmin · ${fmtDate(d)}</div><div style="padding:0 16px">${sessionCards}<button class="btn btn-primary btn-full" onclick="addGarminSession('${d}')">+ Add Session</button></div>`;
@@ -913,10 +1006,12 @@ function renderLogNutrition() {
     <div class="section-header">Nutrition · ${fmtDate(d)}</div>
     <div class="card">
       <div class="card-header"><span class="card-title">MFP Screenshot</span>${hasImg?`<button class="btn btn-ghost btn-sm" onclick="viewImg('${imgKey}')">View</button>`:''}</div>
-      ${hasImg?`<div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="replaceNutImg('${d}')">Replace</button><button class="btn btn-secondary btn-sm" onclick="analyzeNutrition('${d}')">⚡ Analyze</button></div>`:`<button class="btn btn-secondary btn-full" onclick="addNutImg('${d}')">📷 Upload MFP Screenshot</button>`}
+      ${hasImg
+        ? `<div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="replaceNutImg('${d}')">Replace</button><button class="btn btn-secondary btn-sm" onclick="analyzeNutrition('${d}')">${sparkIcon()} Analyze</button></div>`
+        : `<div class="upload-zone" onclick="addNutImg('${d}')"><div class="upload-zone-icon">${uploadIcon()}</div><div class="upload-zone-label">MFP daily summary</div><div class="upload-zone-sub">Screenshot of your macro totals</div></div>`}
     </div>
     <div class="card">
-      <div class="card-header"><span class="card-title">Macros</span><button class="btn btn-ghost btn-sm" onclick="aiNutritionTargets('${d}')">⚡ AI Targets</button></div>
+      <div class="card-header"><span class="card-title">Macros</span><button class="btn btn-ghost btn-sm" onclick="aiNutritionTargets('${d}')">${sparkIcon()} AI targets</button></div>
       <div class="macro-grid">
         ${[['Calories',n.cal,t.cal,'kcal'],['Protein',n.pro,t.pro,'g'],['Carbs',n.carb,t.carb,'g'],['Fat',n.fat,t.fat,'g']].map(([lbl,val,target,unit])=>`
           <div class="macro-cell">
@@ -946,7 +1041,7 @@ function deleteWorkout(d, id) {
   save(); renderLogContent();
 }
 function addGarminSession(d) {
-  dayLog(d).garmin.sessions.push({tag:'',imgs:[],manual:{}});
+  dayLog(d).garmin.sessions.push({tag:'',imgs:[],manual:{},shoeId:null});
   save(); renderLogContent();
 }
 function deleteGarminSession(d, i) {
@@ -1005,7 +1100,7 @@ async function aiNutritionTargets(d) {
 
 // ─── WORKOUT BUILDER ─────────────────────────────────────────
 function openWorkoutAdd(d) {
-  WB = {date:d,editId:null,type:'GPP',format:'AMRAP',formatVal:'',sets:1,name:'',movements:[{name:'',target:'',actual:''}],exercises:[],result:'',rpe:6,notes:''};
+  WB = {date:d,editId:null,type:'GPP',format:'AMRAP',formatVal:'',sets:1,name:'',movements:[{name:'',target:'',actual:''}],exercises:[],result:'',rpe:6,notes:'',shoeId:null};
   document.getElementById('workoutModalTitle').textContent = 'Add Workout';
   renderWorkoutModal(); openModal('workoutModal');
 }
@@ -1022,7 +1117,7 @@ function renderWorkoutModal() {
   const prevHint = (exName) => {
     const hist = S.exHistory[exName?.toLowerCase()];
     if (!hist) return '';
-    return `<div class="prev-hint">📊 Last (${fmtDate(hist.date)}): ${hist.sets.map(s=>s.w+'×'+s.r).join(', ')}</div>`;
+    return `<div class="prev-hint"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Last (${fmtDate(hist.date)}): ${hist.sets.map(s=>s.w+'×'+s.r).join(', ')}</div>`;
   };
   document.getElementById('workoutContent').innerHTML = `
     <div class="input-group">
@@ -1073,6 +1168,7 @@ function renderWorkoutModal() {
         </div>`).join('')}
       <button class="btn btn-secondary btn-sm" onclick="WB.exercises.push({name:'',sets:[{w:null,r:null}]});renderWorkoutModal()">+ Exercise</button>
     </div>`}
+    ${S.settings.shoes.length?`<div class="input-group"><label class="label">Shoes</label><select class="input" onchange="WB.shoeId=this.value||null"><option value="">No shoe</option>${S.settings.shoes.map(s=>`<option value="${s.id}" ${WB.shoeId===s.id?'selected':''}>${s.name}</option>`).join('')}</select></div>`:''}
     <div class="rpe-row">
       <span class="rpe-label">RPE</span>
       <input class="rpe-slider" type="range" min="1" max="10" value="${WB.rpe||6}" oninput="WB.rpe=+this.value;this.nextElementSibling.textContent=this.value">
@@ -1089,7 +1185,7 @@ function saveWorkout() {
   if (WB.type==='Strength') {
     (WB.exercises||[]).forEach(ex=>{ if(ex.name&&ex.sets?.length) S.exHistory[ex.name.toLowerCase()]={date:d,sets:ex.sets.filter(s=>s.w||s.r)}; });
   }
-  const workout = {id:WB.editId||uid(),name:WB.name,type:WB.type,format:WB.format,formatVal:WB.formatVal,sets:WB.sets,movements:WB.movements?.filter(m=>m.name)||[],exercises:WB.exercises?.filter(e=>e.name)||[],result:WB.result,rpe:WB.rpe,notes:WB.notes};
+  const workout = {id:WB.editId||uid(),name:WB.name,type:WB.type,format:WB.format,formatVal:WB.formatVal,sets:WB.sets,movements:WB.movements?.filter(m=>m.name)||[],exercises:WB.exercises?.filter(e=>e.name)||[],result:WB.result,rpe:WB.rpe,notes:WB.notes,shoeId:WB.shoeId||null};
   if (WB.editId) { const idx=session.workouts.findIndex(w=>w.id===WB.editId); if(idx>=0)session.workouts[idx]=workout; }
   else session.workouts.push(workout);
   save(); closeModal('workoutModal'); renderLogContent(); showToast('Workout saved ✓');
@@ -1137,7 +1233,7 @@ function renderBottomNav() {
     {id:'log',label:'Log',icon:'<path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>'},
     {id:'health',label:'Health',icon:'<path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>'},
     {id:'progress',label:'Progress',icon:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'},
-    {id:'plan',label:'Plan',icon:'<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>'}
+    {id:'plan',label:'Coach',icon:'<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>'}
   ];
   document.getElementById('bottomNav').innerHTML = tabs.map(t=>`
     <div class="nav-item ${S.tab===t.id?'active':''}" onclick="${t.id==='today'?'goToday()':'switchTab(\''+t.id+'\')'}">
@@ -1202,19 +1298,36 @@ function renderProgressContent() {
   S.settings.shoes.forEach(shoe=>{ shoeMiles[shoe.id] = shoe.extraMiles || 0; });
   sortedDates.forEach(d=>{
     const log = S.logs[d];
-    const shoeId = log?.session?.shoeId;
-    if (!shoeId) return;
     const garminSessions = log?.garmin?.sessions||[];
     garminSessions.forEach(s=>{
       const dist = parseFloat(s.manual?.dist)||0;
-      shoeMiles[shoeId] = (shoeMiles[shoeId]||0) + dist;
+      if (!dist || !s.shoeId) return;
+      if (shoeMiles.hasOwnProperty(s.shoeId)) shoeMiles[s.shoeId] += dist;
     });
   });
 
   const maxMiles = Math.max(1, ...Object.values(shoeMiles));
 
+  const totalSessions = sortedDates.filter(d=>S.logs[d]?.session?.workouts?.length>0).length;
+  const totalRuns = sortedDates.reduce((acc,d)=>{
+    const ws = S.logs[d]?.session?.workouts||[];
+    return acc + ws.filter(w=>w.type==='Run').length;
+  }, 0);
+
   el.innerHTML = `
     <div class="section-header">Progress</div>
+
+    <div class="card" style="margin:0 16px 12px;display:flex;gap:24px">
+      <div>
+        <div style="font-size:28px;font-weight:700;color:var(--text);line-height:1">${totalSessions}</div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Sessions logged</div>
+      </div>
+      <div style="width:1px;background:var(--border)"></div>
+      <div>
+        <div style="font-size:28px;font-weight:700;color:var(--text);line-height:1">${totalRuns}</div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Runs logged</div>
+      </div>
+    </div>
 
     <div class="card-title-lg" style="padding:0 16px 8px">Running Pace Trend</div>
     <div class="chart-wrap">
@@ -1267,7 +1380,19 @@ function renderPlanContent() {
     <div class="chat-msg ${m.role==='user'?'user':'ai'}">${m.content.replace(/\n/g,'<br>')}</div>
   `).join('');
 
+  const coachSnapKey = 'coach-summary-'+today();
+  const coachSnap = S.summaries[coachSnapKey];
+
   el.innerHTML = `
+    <div class="section-header">Weekly Summary</div>
+    <div class="advice-card" style="margin:0 16px 12px">
+      <div class="advice-header" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">${sparkIcon()} This week</span>
+        <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:11px" onclick="generateCoachSummary()">${coachSnap&&coachSnap!=='loading'?'Refresh':'Generate'}</button>
+      </div>
+      ${coachSnap==='loading'?`<div class="advice-loading"><div class="spinner"></div> Analyzing your week...</div>`:coachSnap?`<div class="advice-body">${coachSnap.replace(/\n/g,'<br>')}</div>`:`<div class="advice-body text-muted" style="font-size:13px">Tap Generate for a weekly performance summary.</div>`}
+    </div>
+
     <div class="section-header">Program Screenshots</div>
     <div class="plan-img-grid" id="planImgGrid">
       ${S.planImgs.map((key,i)=>`
@@ -1276,14 +1401,14 @@ function renderPlanContent() {
           <button class="plan-img-del" onclick="deletePlanImg(${i})">✕</button>
         </div>`).join('')}
       <div class="plan-img-add" onclick="addPlanImg()">
-        <span style="font-size:28px">📷</span>
-        <span>Add Program Screenshot</span>
+        <span style="color:var(--accent)">${uploadIcon(22)}</span>
+        <span style="font-size:12px">Add screenshot</span>
       </div>
     </div>
 
-    <div class="section-header">AI Coach</div>
+    <div class="section-header">Chat</div>
     <div class="chat-area" id="chatArea">
-      ${S.chatHistory.length===0?`<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-text">Ask your AI coach anything about your training.<br>Upload program screenshots above for context.</div></div>`:msgs}
+      ${S.chatHistory.length===0?`<div class="empty-state"><div style="color:var(--muted)">${'<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'}</div><div class="empty-state-text" style="margin-top:8px">Ask your coach anything about your training.<br>Upload context photos above for reference.</div></div>`:msgs}
     </div>
 
     <div class="chat-input-row">
@@ -1398,9 +1523,9 @@ function renderSettingsContent() {
     <div class="settings-section">
       <div class="settings-section-title">Data</div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary btn-sm" onclick="backupData()">💾 Backup</button>
-        <button class="btn btn-secondary btn-sm" onclick="restoreData()">📂 Restore</button>
-        <button class="btn btn-danger btn-sm" onclick="if(confirm('Delete ALL data?')){localStorage.removeItem('${STORE_KEY}');location.reload()}">🗑️ Clear All</button>
+        <button class="btn btn-secondary btn-sm" onclick="backupData()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Backup</button>
+        <button class="btn btn-secondary btn-sm" onclick="restoreData()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Restore</button>
+        <button class="btn btn-danger btn-sm" onclick="if(confirm('Delete ALL data?')){localStorage.removeItem('${STORE_KEY}');location.reload()}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> Clear all</button>
       </div>
     </div>
   `;
