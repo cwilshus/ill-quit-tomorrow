@@ -2176,6 +2176,10 @@ function render() {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/ill-quit-tomorrow/sw.js').catch(()=>{});
+}
+
 loadState();
 render();
 
