@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="IQT">
-<link id="pwaIcon" rel="apple-touch-icon">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>I'll Quit Tomorrow</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -2119,22 +2119,7 @@ function render() {
 // ─── INIT ─────────────────────────────────────────────────────
 loadState();
 render();
-// PWA icon: render Santa on dark background for iOS home screen
-(function setPwaIcon() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 180; canvas.height = 180;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0E1111';
-  ctx.fillRect(0,0,180,180);
-  const img = new Image();
-  img.onload = function() {
-    ctx.drawImage(img,10,10,160,160);
-    canvas.toBlob(function(blob) {
-      if (blob) document.getElementById('pwaIcon').href = URL.createObjectURL(blob);
-    },'image/png');
-  };
-  img.src = SANTA_ICON_180;
-})();
+
 </script>
 </body>
 </html>
