@@ -715,7 +715,7 @@ function recentSummary() {
 
 async function testApiKey() {
   const raw = S.settings.apiKey||'';
-  const key = raw.replace(/\s/g,'');
+  const key = raw.trim();
   const el = document.getElementById('apiTestResult');
   if (!key) { if(el) el.textContent = '⚠️ No key saved'; return; }
   if(el) el.innerHTML = '<span style="color:var(--muted)">Testing…</span>';
@@ -743,7 +743,7 @@ function fmtAI(t) {
 
 // ─── AI CALLS ─────────────────────────────────────────────────
 async function aiJSON(prompt, imgDataArr=[]) {
-  const key = (S.settings.apiKey||'').replace(/\s/g,'');
+  const key = (S.settings.apiKey||'').trim();
   if (!key) throw new Error('No API key — add it in Settings');
   const content = [];
   for (const imgData of imgDataArr) {
@@ -762,7 +762,7 @@ async function aiJSON(prompt, imgDataArr=[]) {
 }
 
 async function aiText(prompt, imgDataArr=[]) {
-  const key = (S.settings.apiKey||'').replace(/\s/g,'');
+  const key = (S.settings.apiKey||'').trim();
   if (!key) throw new Error('No API key — add it in Settings');
   const content = [];
   for (const imgData of imgDataArr) {
@@ -780,7 +780,7 @@ async function aiText(prompt, imgDataArr=[]) {
 }
 
 async function chatCall(userMessage, imgData=null) {
-  const key = (S.settings.apiKey||'').replace(/\s/g,'');
+  const key = (S.settings.apiKey||'').trim();
   if (!key) throw new Error('No API key — add it in Settings');
   const system = `You are Coach Santa Claude, the world's best hybrid endurance coach specializing in Hyrox. ${athleteCtx()} ${recentSummary()} Answer concisely and practically.`;
   const history = S.chatHistory.slice(-20).map(m=>({role:m.role,content:[{type:'text',text:m.content}]}));
@@ -2004,7 +2004,7 @@ async function sendChat() {
     let replyContent;
     if (planImgData.length) {
       // Pass program screenshots as context with chat
-      const key = (S.settings.apiKey||'').replace(/\s/g,'');
+      const key = (S.settings.apiKey||'').trim();
       if (!key) throw new Error('No API key');
       const system = `You are Coach Santa Claude, the world's best hybrid endurance coach specializing in Hyrox. ${athleteCtx()} ${recentSummary()} Answer concisely and practically.`;
       const history = S.chatHistory.slice(-20).map(m=>({role:m.role,content:[{type:'text',text:m.content}]}));
@@ -2036,7 +2036,7 @@ function renderSettingsContent() {
       <div class="input-group" style="margin:0">
         <input class="input" type="text" id="apiKeyInput" placeholder="sk-ant-..." value="${s.apiKey||''}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
         <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn btn-primary btn-sm" onclick="const v=document.getElementById('apiKeyInput').value.replace(/\s/g,'');S.settings.apiKey=v;save();renderSettingsContent();showToast(v?'API key saved ✓':'Key cleared')">Save Key</button>
+          <button class="btn btn-primary btn-sm" onclick="const v=document.getElementById('apiKeyInput').value.trim();S.settings.apiKey=v;save();renderSettingsContent();showToast(v?'API key saved ✓':'Key cleared')">Save Key</button>
           <button class="btn btn-secondary btn-sm" onclick="document.getElementById('apiKeyInput').value='';S.settings.apiKey='';save();renderSettingsContent();showToast('Key cleared')">Clear</button>
           <button class="btn btn-secondary btn-sm" onclick="testApiKey()">Test</button>
         </div>
