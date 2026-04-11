@@ -368,6 +368,30 @@ const EXERCISE_GROUPS = [
 ];
 const SCHEDULE_SESSION_TYPE = {'Compromised Run':'Monostructural','Bike Recovery':'Monostructural','Easy Z2 Run':'Monostructural','Threshold':'Monostructural','Bike Aerobic':'Monostructural','Key Run':'Monostructural','Long Run':'Monostructural'};
 const SCHEDULE_RUN_TYPE = {'Compromised Run':'Easy','Easy Z2 Run':'Easy','Threshold':'Threshold','Key Run':'Tempo','Long Run':'Long'};
+
+const INITIAL_PLAN = [
+  { weekStart:'2026-03-16', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 3×8 min @ threshold (2 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'5×1 km @ 4:05–4:10/km, 2 min jog', Sat:'7–9 mi long run Z2, last 2 mi fast finish (~4:20/km)', Sun:'4 rounds: 800m run + 20 burpee broad jumps' }},
+  { weekStart:'2026-03-23', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 3×8 min @ threshold (2 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'Kenyan floats: 6 km alternating (1 km @ 3:55–4:00 / 1 km @ 4:35)', Sat:'7–9 mi long run Z2, last 2 mi fast finish (~4:20/km)', Sun:'5 rounds: 1 km run + 20 wall balls' }},
+  { weekStart:'2026-03-30', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 2×12 min @ threshold (3 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'6×1 km @ 4:00–4:05/km, 2 min jog', Sat:'7–9 mi long run Z2, last 2 mi fast finish (~4:20/km)', Sun:'4 rounds: 1 km run + 20 wall balls' }},
+  { weekStart:'2026-04-06', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 2×12 min @ threshold (3 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'Kenyan floats: 7 km alternating hard/float', Sat:'7–9 mi long run Z2, last 2 mi fast finish (~4:20/km)', Sun:'5 rounds: 1 km run + 20 wall balls' }},
+  { weekStart:'2026-04-13', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 20 min continuous threshold', Thu:'35–45 min C2 bike aerobic', Fri:'5×1 km @ 3:58–4:03/km', Sat:'7–9 mi long run Z2, last 2 mi fast finish (~4:20/km)', Sun:'5 rounds: 1 km run + 20 wall balls' }},
+  { weekStart:'2026-04-20', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 25 min continuous threshold', Thu:'35–45 min C2 bike aerobic', Fri:'8 km alternating hard/float', Sat:'7–9 mi long run Z2, last 2 mi fast finish (~4:20/km)', Sun:'Race simulation: 1 km run + 25 burpees ×4' }},
+  { weekStart:'2026-04-27', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 20 min threshold (reduced volume)', Thu:'35–45 min C2 bike aerobic', Fri:'4×1 km @ 3:55–4:00/km', Sat:'7–9 mi long run Z2, last 2 mi fast finish (~4:20/km)', Sun:'6 rounds: 800m run + 20 lunges' }},
+  { weekStart:'2026-05-04', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 20 min threshold (reduced volume)', Thu:'35–45 min C2 bike aerobic', Fri:'3×1 km @ race pace', Sat:'7–9 mi long run Z2, last 2 mi fast finish (~4:20/km)', Sun:'Light simulation: 4 rounds 800m run + 15 burpees' }}
+];
+
+function getPlanForDate(d) {
+  const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(d+'T12:00:00').getDay()];
+  const wk = weekStart(d);
+  const week = (S.trainingPlan||[]).find(w => w.weekStart === wk);
+  return week ? (week.sessions[dow] || null) : null;
+}
+
+function blockKey(d) {
+  const jan1 = new Date(d.slice(0,4)+'-01-01');
+  const dayOfYear = Math.floor((new Date(d+'T12:00:00') - jan1) / 86400000);
+  return d.slice(0,4)+'-B'+(Math.floor(dayOfYear/28)+1);
+}
 const TYPE_BADGE = {Monostructural:'mono',GPP:'gpp',Strength:'strength','Applied Strength':'applied','Gross Conditioning':'gross','Extra Credit':'extra'};
 
 // ─── STATE ───────────────────────────────────────────────────
@@ -385,14 +409,17 @@ let S = {
     weight: 163,
     shoes: [],
     macroTargets: { cal: 2400, pro: 180, carb: 250, fat: 80 },
-    goals: ''
+    goals: '',
+    githubToken: '',
+    gistId: ''
   },
   logs: {},
   exHistory: {},
   chatHistory: [],
   planImgs: [],
   imgs: {},
-  summaries: {}
+  summaries: {},
+  trainingPlan: []
 };
 
 // ─── WORKOUT BUILDER STATE ────────────────────────────────────
@@ -400,17 +427,25 @@ let WB = { date: null, editId: null, type: 'GPP', format: 'AMRAP', formatVal: ''
 let GB = { date: null, editIdx: null, tag: '', imgs: [], manual: { dist: '', pace: '', hr: '', cad: '' } };
 
 // ─── PERSISTENCE ─────────────────────────────────────────────
-function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e) { showToast('Storage full — clear some images'); } }
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e) { showToast('Storage full — clear some images'); } autoBackup(); }
 
 function loadState() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) { const saved = JSON.parse(raw); S = {...S, ...saved}; }
-  } catch(e) {}
+    if (raw) {
+      const saved = JSON.parse(raw); S = {...S, ...saved};
+    } else if (S.settings.gistId && S.settings.githubToken) {
+      // localStorage empty (e.g. after PWA reinstall) — offer Gist restore
+      setTimeout(()=>{
+        if (confirm('No local data found. Restore from Gist backup?')) restoreFromGist();
+      }, 800);
+    }
+    if (!S.trainingPlan || !S.trainingPlan.length) S.trainingPlan = INITIAL_PLAN;
+  } catch(e) { if (!S.trainingPlan || !S.trainingPlan.length) S.trainingPlan = INITIAL_PLAN; }
 }
 
 // ─── DATE HELPERS ─────────────────────────────────────────────
-function today() { return new Date().toISOString().slice(0,10); }
+function today() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function fmtDate(d) { const dt = new Date(d+'T12:00:00'); return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 function fmtDay(d) { const dt = new Date(d+'T12:00:00'); return dt.toLocaleDateString('en-US',{weekday:'short'}); }
 function addDays(d, n) { const dt = new Date(d+'T12:00:00'); dt.setDate(dt.getDate()+n); return dt.toISOString().slice(0,10); }
@@ -443,6 +478,7 @@ function dayLog(d) {
     if (s.sessionType === undefined) s.sessionType = '';
     if (s.runType === undefined) s.runType = '';
     if (!s.intervalSets) s.intervalSets = [];
+    if (s.notes === undefined) s.notes = '';
   });
   return log;
 }
@@ -503,11 +539,152 @@ function pickMultiImg(callback) {
   inp.click();
 }
 
+
+// ─── GIST BACKUP ─────────────────────────────────────────────
+async function autoBackup() {
+  if (!S.settings.githubToken || !S.settings.gistId) return;
+  const payload = {...S, imgs: {}};
+  try {
+    await fetch(`https://api.github.com/gists/${S.settings.gistId}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `token ${S.settings.githubToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files: { 'iqt-backup.json': { content: JSON.stringify(payload) } } })
+    });
+  } catch(e) {}
+}
+
+async function createGist() {
+  if (!S.settings.githubToken) { showToast('Enter GitHub token first'); return; }
+  showToast('Creating Gist…');
+  try {
+    const r = await fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: { 'Authorization': `token ${S.settings.githubToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'IQT Training Backup', public: false, files: { 'iqt-backup.json': { content: '{}' } } })
+    });
+    const data = await r.json();
+    if (!data.id) throw new Error(data.message||'Failed');
+    S.settings.gistId = data.id;
+    save(); renderSettingsContent(); showToast('Gist created ✓');
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+async function restoreFromGist() {
+  if (!S.settings.githubToken || !S.settings.gistId) { showToast('GitHub token + Gist ID required'); return; }
+  showToast('Restoring…');
+  try {
+    const r = await fetch(`https://api.github.com/gists/${S.settings.gistId}`, {
+      headers: { 'Authorization': `token ${S.settings.githubToken}` }
+    });
+    const data = await r.json();
+    const content = data.files?.['iqt-backup.json']?.content;
+    if (!content || content === '{}') { showToast('No backup found in Gist'); return; }
+    const saved = JSON.parse(content);
+    S = {...S, ...saved};
+    save(); render(); showToast('Restored from Gist ✓');
+  } catch(e) { showToast('Restore failed: '+e.message); }
+}
+
+// ─── TIERED AI SUMMARIES ─────────────────────────────────────
+async function ensureDailySummary(d) {
+  const key = 'daily-'+d;
+  if (S.summaries[key] || S.summaries[key+'_loading']) return;
+  const log = S.logs[d]; if (!log) return;
+  if (!S.settings.apiKey) return;
+  S.summaries[key+'_loading'] = true;
+  try {
+    const sessions = (log.garmin?.sessions||[]).map(s=>{
+      const tag = s.tag || s.sessionType || 'session';
+      const dist = s.manual?.dist ? `${s.manual.dist}mi` : '';
+      const pace = s.manual?.pace ? `@${s.manual.pace}/mi` : '';
+      const hr = s.manual?.hr ? `HR:${s.manual.hr}` : '';
+      return [tag,dist,pace,hr].filter(Boolean).join(' ');
+    }).join('; ');
+    const ctx = `${d}: HRV:${log.morning?.hrv||'?'}, Sleep:${log.morning?.sleepScore||'?'}, Weight:${log.morning?.weight||'?'}lbs. Sessions: ${sessions||'rest day'}.`;
+    const txt = await aiText(`Write a 2-sentence training summary for this day: ${ctx} Be specific and concise.`);
+    S.summaries[key] = txt;
+    delete S.summaries[key+'_loading'];
+    save();
+  } catch(e) { delete S.summaries[key+'_loading']; }
+}
+
+async function ensureWeeklySummary(wk) {
+  const key = 'weekly-'+wk;
+  if (S.summaries[key] || S.summaries[key+'_loading']) return;
+  if (!S.settings.apiKey) return;
+  const days = Array.from({length:7},(_,i)=>{ const dt=new Date(wk+'T12:00:00'); dt.setDate(dt.getDate()+i); return dt.toISOString().slice(0,10); });
+  const dailies = days.map(d=>S.summaries['daily-'+d]).filter(Boolean).join('
+');
+  if (!dailies) return;
+  S.summaries[key+'_loading'] = true;
+  try {
+    const txt = await aiText(`Write a 3-4 sentence weekly training summary for week of ${wk}:
+${dailies}
+Focus on training load, patterns, and notable performances or fatigue signals.`);
+    S.summaries[key] = txt;
+    delete S.summaries[key+'_loading'];
+    save();
+  } catch(e) { delete S.summaries[key+'_loading']; }
+}
+
+async function ensureBlockSummary(blk) {
+  const key = 'block-'+blk;
+  if (S.summaries[key] || S.summaries[key+'_loading']) return;
+  if (!S.settings.apiKey) return;
+  const weeklies = Object.keys(S.summaries).filter(k=>k.startsWith('weekly-')).sort().slice(-4).map(k=>S.summaries[k]).filter(Boolean).join('
+');
+  if (!weeklies) return;
+  S.summaries[key+'_loading'] = true;
+  try {
+    const txt = await aiText(`Write a 4-5 sentence training block summary for ${blk}:
+${weeklies}
+Focus on fitness progression, strengths developed, limiters, and recommended focus for next block.`);
+    S.summaries[key] = txt;
+    delete S.summaries[key+'_loading'];
+    save();
+  } catch(e) { delete S.summaries[key+'_loading']; }
+}
+
+function buildCoachContext(d) {
+  const parts = [];
+  for (let i=6; i>=0; i--) {
+    const dt = new Date(d+'T12:00:00'); dt.setDate(dt.getDate()-i);
+    const ds = dt.toISOString().slice(0,10);
+    const sum = S.summaries['daily-'+ds];
+    if (sum) parts.push(sum);
+  }
+  const wk = weekStart(d);
+  if (S.summaries['weekly-'+wk]) parts.push('WEEKLY: '+S.summaries['weekly-'+wk]);
+  const blk = blockKey(d);
+  if (S.summaries['block-'+blk]) parts.push('TRAINING BLOCK: '+S.summaries['block-'+blk]);
+  // lazily trigger next-level summaries
+  ensureWeeklySummary(wk);
+  ensureBlockSummary(blk);
+  return parts.length ? '\n\nRecent training history:\n'+parts.join('\n') : '';
+}
+
+// ─── PLAN EVOLUTION ──────────────────────────────────────────
+async function evolvePlan() {
+  if (!S.settings.apiKey) { showToast('API key required'); return; }
+  showToast('Coach Santa is reviewing your plan…', 4000);
+  const currentPlan = JSON.stringify((S.trainingPlan||[]).slice(-4));
+  const recentPerf = buildCoachContext(today());
+  const prompt = `You are Coach Santa, a Hyrox coach. Review this athlete's recent performance and evolve their training plan for the next 4 weeks.\n\nAthlete goals: ${S.settings.goals||'Hyrox race June 1 2026'}\n\nRecent performance:\n${recentPerf}\n\nCurrent plan (last 4 weeks):\n${currentPlan}\n\nReturn ONLY a JSON array of 4 week objects: [{weekStart:"YYYY-MM-DD",sessions:{Mon:"...",Tue:"...",Wed:"...",Thu:"...",Fri:"...",Sat:"...",Sun:"..."}}]. Start weekStart from the Monday of next week. Keep the same weekly structure (bike Mon/Thu, easy Tue, threshold Wed, key run Fri, long run Sat, compromised Sun). Adjust intensity and volume based on performance.`;
+  try {
+    const result = await aiJSON(prompt);
+    if (Array.isArray(result) && result.length) {
+      const todayWk = weekStart(today());
+      S.trainingPlan = [...(S.trainingPlan||[]).filter(w=>w.weekStart<todayWk), ...result];
+      save(); renderPlanContent(); showToast('Plan updated by Coach Santa ✓');
+    } else { showToast('Unexpected response — plan not updated'); }
+  } catch(e) { showToast('Evolution failed: '+e.message); }
+}
+
 function athleteCtx() {
   const wk = currentWeekNum(), tot = totalWeekNum();
   const weekCtx = wk && tot ? `Week ${wk} of ${tot}` : 'Training in progress';
   const goalsStr = S.settings.goals ? ` Current goals: ${S.settings.goals}` : '';
-  return `Athlete: Caleb Wilshusen, 38yo male, 163 lbs, training for Hyrox (race: ${S.settings.raceDate}, ${daysUntil(S.settings.raceDate)} days away, ${weekCtx}). Weekly schedule: Sun=Compromised Run, Mon=Bike Recovery, Tue=Easy Z2, Wed=Threshold+Strength, Thu=Bike Aerobic, Fri=Key Run, Sat=Long Run. Primary training: Monostructural, GPP, Strength from Hybrid Engine Pro Track.${goalsStr}`;
+  return `Athlete: Caleb Wilshusen, 38yo male, 163 lbs, training for Hyrox (race: ${S.settings.raceDate}, ${daysUntil(S.settings.raceDate)} days away, ${weekCtx}). Weekly schedule: Sun=Compromised Run, Mon=Bike Recovery, Tue=Easy Z2, Wed=Threshold+Strength, Thu=Bike Aerobic, Fri=Key Run, Sat=Long Run. Primary training: Monostructural, GPP, Strength from Hybrid Engine Pro Track.${goalsStr}` + buildCoachContext(today());
 }
 
 function recentSummary() {
@@ -1160,22 +1337,25 @@ function renderLogGarmin() {
         ${intervalRows}
         <button class="btn btn-secondary btn-sm" onclick="addIntervalSet('${d}',${i})">+ Add Set</button>
       </div>`:''}
+      <div class="input-group" style="margin:8px 0 0">
+        <label class="label">Notes</label>
+        <textarea class="input input-sm" rows="2" placeholder="Session notes…" oninput="dayLog('${d}').garmin.sessions[${i}].notes=this.value;save()">${s.notes||''}</textarea>
+      </div>
     </div>`;
   }).join('');
   const soreChips = SORENESS_AREAS.map(a=>`<div class="chip ${(gl.soreness||[]).includes(a)?'active':''}" onclick="toggleGarminSoreness('${d}','${a}')">${a}</div>`).join('');
+  const plan = getPlanForDate(d);
   return `<div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
     <span>Session · ${fmtDate(d)}</span>
     <span style="font-size:12px;color:var(--accent);font-weight:600">${scheduledLabel}</span>
   </div>
+  ${plan ? `<div class="card" style="border-left:3px solid var(--accent);margin-top:4px;margin-bottom:0"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Today's Plan</div><div style="font-size:13px;color:var(--text);line-height:1.5">${plan}</div></div>` : ''}
+  <div class="card" style="margin-top:4px">
+    <div class="input-group" style="margin:0"><label class="label">Soreness</label><div class="chip-group">${soreChips}</div></div>
+  </div>
   <div style="padding:0 16px">
     ${sessionCards}
     <button class="btn btn-primary btn-full" onclick="addGarminSession('${d}')">+ Add Session</button>
-  </div>
-  <div class="card" style="margin-top:12px">
-    <div class="input-group" style="margin:0"><label class="label">Soreness</label><div class="chip-group">${soreChips}</div></div>
-  </div>
-  <div class="card">
-    <div class="input-group" style="margin:0"><label class="label">Session Notes</label><textarea class="input" rows="3" placeholder="How did the session feel?" oninput="dayLog('${d}').garmin.notes=this.value;save()">${gl.notes||''}</textarea></div>
   </div>`;
 }
 
@@ -1241,7 +1421,7 @@ function addGarminSession(d) {
   const scheduledLabel = SCHEDULE[dow]||'';
   const sessionType = SCHEDULE_SESSION_TYPE[scheduledLabel]||'';
   const runType = SCHEDULE_RUN_TYPE[scheduledLabel]||'';
-  dayLog(d).garmin.sessions.push({tag:'',imgs:[],manual:{},shoeId:null,sessionType,runType,intervalSets:[]});
+  dayLog(d).garmin.sessions.push({tag:'',imgs:[],manual:{},shoeId:null,sessionType,runType,intervalSets:[],notes:''});
   save(); renderLogContent();
 }
 function deleteGarminSession(d, i) {
@@ -1322,6 +1502,7 @@ async function autoAnalyzeGarminSession(d, idx) {
     if (result.hr != null && result.hr !== 'null') m.hr = String(result.hr);
     if (result.cad != null && result.cad !== 'null') m.cad = String(result.cad);
     save(); renderLogContent(); showToast('Fields auto-filled ✓');
+    ensureDailySummary(d);
   } catch(e) { showToast('Auto-fill: '+e.message); }
 }
 function addNutImg(d) { pickImg(data=>{ S.imgs['nut-'+d]=data; save(); renderLogContent(); }); }
@@ -1719,6 +1900,10 @@ function renderPlanContent() {
       </div>
     </div>
 
+    <div style="padding:0 16px 12px">
+      <button class="btn btn-secondary btn-sm" onclick="evolvePlan()">${sparkIcon(13)} Evolve Plan with Coach Santa</button>
+    </div>
+
     <div class="section-header">Program Screenshots</div>
     <div class="plan-img-grid" id="planImgGrid">
       ${S.planImgs.map((key,i)=>`
@@ -1845,6 +2030,25 @@ function renderSettingsContent() {
       <div style="display:flex;gap:8px;margin-top:6px">
         <input class="input" id="newShoeName" placeholder="Shoe name (e.g. Nike Alphafly)">
         <button class="btn btn-secondary" onclick="addShoe()">Add</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Cloud Backup (GitHub Gist)</div>
+      <div class="input-group" style="margin-bottom:8px">
+        <label class="label">GitHub Token (gist scope)</label>
+        <input class="input input-sm" type="password" placeholder="ghp_..." value="${s.githubToken||''}" oninput="S.settings.githubToken=this.value;save()">
+      </div>
+      <div class="input-group" style="margin-bottom:8px">
+        <label class="label">Gist ID</label>
+        <div style="display:flex;gap:6px">
+          <input class="input input-sm" style="flex:1" placeholder="Auto-created below" value="${s.gistId||''}" oninput="S.settings.gistId=this.value;save()">
+          <button class="btn btn-secondary btn-sm" onclick="createGist()">Auto-create</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:4px">
+        <button class="btn btn-secondary btn-sm" onclick="restoreFromGist()">Restore from Gist</button>
+        ${s.gistId ? `<span style="font-size:11px;color:var(--muted);align-self:center">Auto-syncing on every save</span>` : `<span style="font-size:11px;color:var(--muted);align-self:center">Enter token + create Gist to enable</span>`}
       </div>
     </div>
 
