@@ -434,6 +434,9 @@ function loadState() {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const saved = JSON.parse(raw); S = {...S, ...saved};
+      // Always open on Today tab showing today's date, regardless of last session
+      S.tab = 'today';
+      S.selDate = today();
     } else if (S.settings.gistId && S.settings.githubToken) {
       // localStorage empty (e.g. after PWA reinstall) — offer Gist restore
       setTimeout(()=>{
