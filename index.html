@@ -2012,8 +2012,12 @@ function renderSettingsContent() {
     <div class="settings-section">
       <div class="settings-section-title">Anthropic API Key</div>
       <div class="input-group" style="margin:0">
-        <input class="input" type="password" placeholder="sk-ant-..." value="${s.apiKey||''}" oninput="S.settings.apiKey=this.value.replace(/\s/g,'');save()">
-        ${s.apiKey ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${s.apiKey.length} chars saved${s.apiKey.startsWith('sk-ant-')?'':' ⚠️ key should start with sk-ant-'}</div>` : `<div style="font-size:11px;color:var(--muted);margin-top:4px">No key saved</div>`}
+        <input class="input" type="text" id="apiKeyInput" placeholder="sk-ant-..." value="${s.apiKey||''}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-primary btn-sm" onclick="const v=document.getElementById('apiKeyInput').value.replace(/\s/g,'');S.settings.apiKey=v;save();renderSettingsContent();showToast(v?'API key saved ✓':'Key cleared')">Save Key</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('apiKeyInput').value='';S.settings.apiKey='';save();renderSettingsContent();showToast('Key cleared')">Clear</button>
+        </div>
+        ${s.apiKey ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">${s.apiKey.length} chars · ${s.apiKey.slice(0,12)}…${s.apiKey.slice(-4)}${s.apiKey.startsWith('sk-ant-')?'':' ⚠️ should start with sk-ant-'}</div>` : `<div style="font-size:11px;color:var(--red);margin-top:6px">No key saved</div>`}
       </div>
     </div>
 
