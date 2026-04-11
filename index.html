@@ -721,7 +721,7 @@ function fmtAI(t) {
 
 // ─── AI CALLS ─────────────────────────────────────────────────
 async function aiJSON(prompt, imgDataArr=[]) {
-  const key = S.settings.apiKey;
+  const key = (S.settings.apiKey||'').replace(/\s/g,'');
   if (!key) throw new Error('No API key — add it in Settings');
   const content = [];
   for (const imgData of imgDataArr) {
@@ -740,7 +740,7 @@ async function aiJSON(prompt, imgDataArr=[]) {
 }
 
 async function aiText(prompt, imgDataArr=[]) {
-  const key = S.settings.apiKey;
+  const key = (S.settings.apiKey||'').replace(/\s/g,'');
   if (!key) throw new Error('No API key — add it in Settings');
   const content = [];
   for (const imgData of imgDataArr) {
@@ -758,7 +758,7 @@ async function aiText(prompt, imgDataArr=[]) {
 }
 
 async function chatCall(userMessage, imgData=null) {
-  const key = S.settings.apiKey;
+  const key = (S.settings.apiKey||'').replace(/\s/g,'');
   if (!key) throw new Error('No API key — add it in Settings');
   const system = `You are Coach Santa Claude, the world's best hybrid endurance coach specializing in Hyrox. ${athleteCtx()} ${recentSummary()} Answer concisely and practically.`;
   const history = S.chatHistory.slice(-20).map(m=>({role:m.role,content:[{type:'text',text:m.content}]}));
@@ -1982,7 +1982,7 @@ async function sendChat() {
     let replyContent;
     if (planImgData.length) {
       // Pass program screenshots as context with chat
-      const key = S.settings.apiKey;
+      const key = (S.settings.apiKey||'').replace(/\s/g,'');
       if (!key) throw new Error('No API key');
       const system = `You are Coach Santa Claude, the world's best hybrid endurance coach specializing in Hyrox. ${athleteCtx()} ${recentSummary()} Answer concisely and practically.`;
       const history = S.chatHistory.slice(-20).map(m=>({role:m.role,content:[{type:'text',text:m.content}]}));
@@ -2012,7 +2012,8 @@ function renderSettingsContent() {
     <div class="settings-section">
       <div class="settings-section-title">Anthropic API Key</div>
       <div class="input-group" style="margin:0">
-        <input class="input" type="password" placeholder="sk-ant-..." value="${s.apiKey||''}" oninput="S.settings.apiKey=this.value.trim();save()">
+        <input class="input" type="password" placeholder="sk-ant-..." value="${s.apiKey||''}" oninput="S.settings.apiKey=this.value.replace(/\s/g,'');save()">
+        ${s.apiKey ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${s.apiKey.length} chars saved${s.apiKey.startsWith('sk-ant-')?'':' ⚠️ key should start with sk-ant-'}</div>` : `<div style="font-size:11px;color:var(--muted);margin-top:4px">No key saved</div>`}
       </div>
     </div>
 
