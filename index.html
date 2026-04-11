@@ -714,7 +714,8 @@ function recentSummary() {
 }
 
 async function testApiKey() {
-  const key = (S.settings.apiKey||'').replace(/\s/g,'');
+  const raw = S.settings.apiKey||'';
+  const key = raw.replace(/\s/g,'');
   const el = document.getElementById('apiTestResult');
   if (!key) { if(el) el.textContent = '⚠️ No key saved'; return; }
   if(el) el.innerHTML = '<span style="color:var(--muted)">Testing…</span>';
@@ -722,14 +723,15 @@ async function testApiKey() {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:[{type:'text',text:'Hi'}]}]})
+      body:JSON.stringify({model:'claude-3-5-haiku-20241022',max_tokens:10,messages:[{role:'user',content:'Hi'}]})
     });
     const data = await res.json();
+    const info = `sending: ${key.slice(0,16)}… (${key.length} chars)`;
     if(el) el.innerHTML = res.ok
-      ? `<span style="color:var(--green)">✓ Key works! (${res.status})</span>`
-      : `<span style="color:var(--red)">✗ ${res.status}: ${data.error?.message||JSON.stringify(data)}</span>`;
+      ? `<span style="color:var(--green)">✓ Key works!</span><br><span style="color:var(--muted)">${info}</span>`
+      : `<span style="color:var(--red)">✗ ${res.status}: ${JSON.stringify(data.error||data)}</span><br><span style="color:var(--muted)">${info}</span>`;
   } catch(e) {
-    if(el) el.innerHTML = `<span style="color:var(--red)">✗ Network error: ${e.message}</span>`;
+    if(el) el.innerHTML = `<span style="color:var(--red)">✗ Network error: ${e.message}</span><br><span style="color:var(--muted)">sending: ${key.slice(0,16)}… (${key.length} chars)</span>`;
   }
 }
 
