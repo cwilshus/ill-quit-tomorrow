@@ -358,12 +358,23 @@ const SORENESS_AREAS = ['Quads','Hamstrings','Glutes','Calves','Lower Back','Upp
 const SCHEDULE = {0:'Compromised Run',1:'Bike Recovery',2:'Easy Z2 Run',3:'Threshold',4:'Bike Aerobic',5:'Key Run',6:'Long Run'};
 const SANTA_ICON_180 = 'data:image/png;base64,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';
 const SANTA_ICON_64 = 'data:image/png;base64,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';
+const RUN_TYPES = ['Easy','Long','Threshold','Tempo','Kenyan Float','Strength','Hills'];
+const EXERCISE_GROUPS = [
+  {label:'Barbell',items:['Back Squat','Front Squat','Overhead Squat','Romanian Deadlift','Conventional Deadlift','Sumo Deadlift','Bench Press','Incline Bench Press','Overhead Press','Barbell Row','Power Clean','Hang Clean','Push Jerk','Split Jerk','Thruster','Good Morning','Hip Thrust']},
+  {label:'Dumbbell',items:['Dumbbell Press','Dumbbell Row','Lateral Raise','Bicep Curl','Hammer Curl','Tricep Extension','Goblet Squat','Lunge','Step Up','Farmer Carry','Suitcase Carry','Arnold Press']},
+  {label:'Machine / Cable',items:['Lat Pulldown','Cable Row','Chest Fly','Leg Press','Leg Curl','Leg Extension','Cable Curl','Tricep Pushdown','Face Pull']},
+  {label:'Bodyweight / Gymnastics',items:['Pull-up','Chin-up','Dip','Push-up','Ring Dip','Muscle-up','Handstand Push-up','Toes to Bar','Knees to Elbows','GHD Sit-up','Back Extension','L-Sit']},
+  {label:'CrossFit / Conditioning',items:['Box Jump','Box Step-up','Wall Ball','Kettlebell Swing','Kettlebell Clean','Kettlebell Press','Double Under','Burpee','Rope Climb','Sled Push','Sled Pull','Assault Bike','Row (Machine)','SkiErg','Sandbag Carry','Turkish Get-up']}
+];
+const SCHEDULE_SESSION_TYPE = {'Compromised Run':'Monostructural','Bike Recovery':'Monostructural','Easy Z2 Run':'Monostructural','Threshold':'Monostructural','Bike Aerobic':'Monostructural','Key Run':'Monostructural','Long Run':'Monostructural'};
+const SCHEDULE_RUN_TYPE = {'Compromised Run':'Easy','Easy Z2 Run':'Easy','Threshold':'Threshold','Key Run':'Tempo','Long Run':'Long'};
 const TYPE_BADGE = {Monostructural:'mono',GPP:'gpp',Strength:'strength','Applied Strength':'applied','Gross Conditioning':'gross','Extra Credit':'extra'};
 
 // ─── STATE ───────────────────────────────────────────────────
 let S = {
   tab: 'today',
-  logSubTab: 'session',
+  logSubTab: 'garmin',
+  progressView: 'weekly',
   calView: 'day',
   weekOffset: 0,
   selDate: today(),
@@ -373,7 +384,8 @@ let S = {
     trainStart: '2026-03-16',
     weight: 163,
     shoes: [],
-    macroTargets: { cal: 2400, pro: 180, carb: 250, fat: 80 }
+    macroTargets: { cal: 2400, pro: 180, carb: 250, fat: 80 },
+    goals: ''
   },
   logs: {},
   exHistory: {},
@@ -422,9 +434,20 @@ function daysUntil(d) {
 
 // ─── LOG HELPERS ─────────────────────────────────────────────
 function dayLog(d) {
-  if (!S.logs[d]) S.logs[d] = { morning:{}, session:{soreness:[],workouts:[],notes:'',shoeId:null}, garmin:{sessions:[]}, nutrition:{} };
-  return S.logs[d];
+  if (!S.logs[d]) S.logs[d] = { morning:{}, session:{soreness:[],workouts:[],notes:'',shoeId:null}, garmin:{sessions:[],soreness:[],notes:''}, strength:{lifts:[]}, nutrition:{} };
+  const log = S.logs[d];
+  if (!log.garmin.soreness) log.garmin.soreness = [];
+  if (log.garmin.notes === undefined) log.garmin.notes = '';
+  if (!log.strength) log.strength = {lifts:[]};
+  (log.garmin.sessions||[]).forEach(s => {
+    if (s.sessionType === undefined) s.sessionType = '';
+    if (s.runType === undefined) s.runType = '';
+    if (!s.intervalSets) s.intervalSets = [];
+  });
+  return log;
 }
+function hasGarminSessions(d) { const g=S.logs[d]?.garmin; return !!(g&&g.sessions&&g.sessions.length>0); }
+function hasStrength(d) { const s=S.logs[d]?.strength; return !!(s&&s.lifts&&s.lifts.length>0); }
 function hasMorning(d) { const m=S.logs[d]?.morning; return m && (m.hrv||m.recovery||m.sleepScore||m.restingHr); }
 function hasSession(d) { const s=S.logs[d]?.session; return s && s.workouts && s.workouts.length>0; }
 function hasNutrition(d) { const n=S.logs[d]?.nutrition; return n && (n.cal||n.pro); }
@@ -452,6 +475,7 @@ function viewImg(key) {
 
 function pickImg(callback) {
   const inp = document.getElementById('imgInput');
+  inp.removeAttribute('multiple');
   inp.onchange = null;
   inp.onchange = (e) => {
     const file = e.target.files[0];
@@ -463,11 +487,27 @@ function pickImg(callback) {
   };
   inp.click();
 }
+function pickMultiImg(callback) {
+  const inp = document.getElementById('imgInput');
+  inp.setAttribute('multiple','multiple');
+  inp.onchange = null;
+  inp.onchange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    const results = await Promise.all(files.map(f=>new Promise(res=>{
+      const r=new FileReader(); r.onload=ev=>res(ev.target.result); r.readAsDataURL(f);
+    })));
+    callback(results);
+    inp.value=''; inp.removeAttribute('multiple');
+  };
+  inp.click();
+}
 
 function athleteCtx() {
   const wk = currentWeekNum(), tot = totalWeekNum();
   const weekCtx = wk && tot ? `Week ${wk} of ${tot}` : 'Training in progress';
-  return `Athlete: Caleb Wilshusen, 38yo male, 163 lbs, training for Hyrox (race: ${S.settings.raceDate}, ${daysUntil(S.settings.raceDate)} days away, ${weekCtx}). Weekly schedule: Sun=Compromised Run, Mon=Bike Recovery, Tue=Easy Z2, Wed=Threshold+Strength, Thu=Bike Aerobic, Fri=Key Run, Sat=Long Run. Primary training: Monostructural, GPP, Strength from Hybrid Engine Pro Track.`;
+  const goalsStr = S.settings.goals ? ` Current goals: ${S.settings.goals}` : '';
+  return `Athlete: Caleb Wilshusen, 38yo male, 163 lbs, training for Hyrox (race: ${S.settings.raceDate}, ${daysUntil(S.settings.raceDate)} days away, ${weekCtx}). Weekly schedule: Sun=Compromised Run, Mon=Bike Recovery, Tue=Easy Z2, Wed=Threshold+Strength, Thu=Bike Aerobic, Fri=Key Run, Sat=Long Run. Primary training: Monostructural, GPP, Strength from Hybrid Engine Pro Track.${goalsStr}`;
 }
 
 function recentSummary() {
@@ -478,8 +518,20 @@ function recentSummary() {
     if (!log) continue;
     const parts = [];
     if (log.morning?.hrv) parts.push(`HRV:${log.morning.hrv}`);
-    if (log.session?.workouts?.length) parts.push(`${log.session.workouts.length} workout(s)`);
-    if (parts.length) days.push(`${fmtDay(d)}: ${parts.join(', ')}`);
+    if (log.morning?.sleepScore) parts.push(`Sleep:${log.morning.sleepScore}`);
+    const garminSessions = log.garmin?.sessions||[];
+    if (garminSessions.length) {
+      const sessionStr = garminSessions.map(s=>{
+        const tag = s.tag || s.sessionType || 'Session';
+        const dist = s.manual?.dist ? `${s.manual.dist}mi` : '';
+        const pace = s.manual?.pace ? `@${s.manual.pace}/mi` : '';
+        const hr = s.manual?.hr ? `HR:${s.manual.hr}` : '';
+        return [tag,dist,pace,hr].filter(Boolean).join(' ');
+      }).join('; ');
+      parts.push(`sessions:[${sessionStr}]`);
+    }
+    if (log.strength?.lifts?.length) parts.push(`strength:${log.strength.lifts.length} lift(s)`);
+    if (parts.length) days.push(`${fmtDay(d)} ${d}: ${parts.join(', ')}`);
   }
   return days.length ? `Recent 7 days — ${days.join(' | ')}` : 'No recent logs.';
 }
@@ -599,21 +651,31 @@ You are Coach Santa Claude, the world's best hybrid fitness coach. Give a concis
 }
 
 async function generateCoachSummary() {
-  const d = today();
-  const key = 'coach-summary-'+d;
+  const wk = weekStart(today());
+  const key = 'coach-summary-'+wk;
   S.summaries[key] = 'loading';
   if (S.tab==='plan') renderPlanContent();
+  if (S.tab==='today') renderTodayContent();
   const lines = [];
   for (let i=6; i>=0; i--) {
-    const dd = addDays(d,-i);
+    const dd = addDays(today(),-i);
     const log = S.logs[dd];
     if (!log) continue;
     const m = log.morning||{};
-    const ws = log.session?.workouts||[];
     const hrv = m.hrv||'—';
-    const workoutSummary = ws.map(w=>`${w.type}: ${w.name}${w.result?' ('+w.result+')':''}${w.rpe?' RPE'+w.rpe:''}`).join('; ');
-    const garminDist = (log.garmin?.sessions||[]).map(s=>s.manual?.dist).filter(Boolean).join('+');
-    if (m.hrv||ws.length) lines.push(`${fmtDay(dd)} (${dd}): HRV=${hrv}, Sleep=${m.sleepScore||'—'}, Recovery=${m.recovery||'—'}/5${ws.length?' | '+workoutSummary:''}${garminDist?' | '+garminDist+' mi':''}`);
+    const garminSessions = log.garmin?.sessions||[];
+    const garminStr = garminSessions.map(s=>{
+      const tag = s.tag||s.sessionType||'Session';
+      const dist = s.manual?.dist?`${s.manual.dist}mi`:'';
+      const pace = s.manual?.pace?`@${s.manual.pace}/mi`:'';
+      const hr = s.manual?.hr?`HR${s.manual.hr}`:'';
+      const rt = s.runType?`(${s.runType})`:'';
+      return [tag,rt,dist,pace,hr].filter(Boolean).join(' ');
+    }).join('; ');
+    const strengthLifts = log.strength?.lifts?.length||0;
+    if (m.hrv||garminSessions.length||strengthLifts) {
+      lines.push(`${fmtDay(dd)} ${dd}: HRV=${hrv}, Sleep=${m.sleepScore||'—'}, Recovery=${m.recovery||'—'}/5${garminStr?' | '+garminStr:''}${strengthLifts?' | '+strengthLifts+' strength lift(s)':''}`);
+    }
   }
   const prompt = `${athleteCtx()}
 
@@ -629,6 +691,7 @@ You are Coach Santa Claude, the world's best hybrid fitness coach. Give a concis
   }
   save();
   if (S.tab==='plan') renderPlanContent();
+  if (S.tab==='today') renderTodayContent();
 }
 
 // ─── TODAY TAB ────────────────────────────────────────────────
@@ -732,17 +795,21 @@ function renderDayView(d) {
     html += `<div class="advice-card"><div class="advice-header">${sparkIcon()} Coach Santa Claude — ${fmtDay(d)} Advice</div><div class="advice-body">${S.summaries[d+'-advice']}</div></div>`;
   }
 
-  // Weekly snapshot (today only)
+  // Weekly coach summary banner (today only)
   if (isToday && S.settings.apiKey) {
-    const snapKey = 'snapshot-'+d;
-    const snap = S.summaries[snapKey];
-    html += `<div class="advice-card">
-      <div class="advice-header" style="justify-content:space-between">
-        <span style="display:flex;align-items:center;gap:6px">${sparkIcon()} Weekly snapshot</span>
-        <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:11px" onclick="generateWeeklySnapshot('${d}')">${snap&&snap!=='loading'?'Refresh':'Generate'}</button>
-      </div>
-      ${snap==='loading'?`<div class="advice-loading"><div class="spinner"></div> Analyzing your week...</div>`:snap?`<div class="advice-body">${snap.replace(/\n/g,'<br>')}</div>`:`<div class="advice-body text-muted" style="font-size:13px">Tap Generate for a weekly performance summary from your coach.</div>`}
-    </div>`;
+    const wkKey = 'coach-summary-'+weekStart(d);
+    const wkSum = S.summaries[wkKey];
+    if (wkSum && wkSum !== 'loading') {
+      html += `<div class="banner banner-blue" style="cursor:pointer;justify-content:space-between" onclick="switchTab('plan')">
+        <span style="font-size:13px;display:flex;align-items:center;gap:6px">${sparkIcon(12)} Weekly summary ready</span>
+        <span style="font-size:12px;opacity:.7">Coach →</span>
+      </div>`;
+    } else if (wkSum === 'loading') {
+      html += `<div class="banner banner-blue" style="justify-content:flex-start;gap:10px">
+        <div class="spinner"></div>
+        <span style="font-size:13px">Generating weekly summary…</span>
+      </div>`;
+    }
   }
 
   // Scheduled workout type
@@ -778,13 +845,18 @@ function renderDayView(d) {
     </div>`;
   }
 
-  // Garmin summary
-  if (log?.garmin?.sessions?.length) {
+  // Session summary (garmin-based)
+  if (hasGarminSessions(d)) {
     html += `<div class="card">
-      <div class="card-header"><span class="card-title">Garmin</span><button class="btn btn-ghost btn-sm" onclick="S.logSubTab='garmin';switchTab('log')">View</button></div>
-      ${log.garmin.sessions.map((s,i)=>`
-        <div style="font-size:13px;padding:4px 0">${s.tag||'Session '+(i+1)}${s.manual?.dist?` · ${s.manual.dist} mi`:''}</div>
-      `).join('')}
+      <div class="card-header"><span class="card-title">Sessions</span><button class="btn btn-ghost btn-sm" onclick="S.logSubTab='garmin';switchTab('log')">Edit</button></div>
+      ${log.garmin.sessions.map((s,i)=>{
+        const tag = s.tag || s.sessionType || ('Session '+(i+1));
+        const rt = s.runType ? ` · ${s.runType}` : '';
+        const dist = s.manual?.dist ? ` · ${s.manual.dist} mi` : '';
+        const hr = s.manual?.hr ? ` · ${s.manual.hr} bpm` : '';
+        return `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)">${tag}${rt}${dist}${hr}</div>`;
+      }).join('')}
+      ${log.garmin.soreness?.length?`<div class="text-sm text-muted" style="margin-top:6px">Soreness: ${log.garmin.soreness.join(', ')}</div>`:''}
     </div>`;
   }
 
@@ -899,12 +971,15 @@ function renderHealthContent() {
       return `<div class="card">
         <div class="card-header"><span class="card-title">Garmin Sleep Screenshot</span>${hasImg?`<button class="btn btn-ghost btn-sm" onclick="viewImg('${sleepImgKey}')">View</button>`:''}</div>
         ${hasImg
-          ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${m.sleepAiSummary?'10px':'0'}">
-              <button class="btn btn-secondary btn-sm" onclick="replaceSleepImg('${d}')">Replace</button>
-              <button class="btn btn-secondary btn-sm" onclick="analyzeSleepImg('${d}')">${sparkIcon()} Analyze with AI</button>
-             </div>`
-          : `<div class="upload-zone" onclick="addSleepImg('${d}')"><div class="upload-zone-icon">${uploadIcon()}</div><div class="upload-zone-label">Garmin sleep summary</div><div class="upload-zone-sub">Screenshot of your sleep stats</div></div>`}
-        ${m.sleepAiSummary?`<div style="padding:12px;background:var(--cream-dim);border:1px solid var(--cream-border);border-radius:8px;font-size:13px;line-height:1.6">${m.sleepAiSummary.replace(/\n/g,'<br>')}</div>`:''}
+          ? `<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:${m.sleepAiSummary?'10px':'0'}">
+              <img src="${S.imgs[sleepImgKey]}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:pointer;flex-shrink:0" onclick="viewImg('${sleepImgKey}')">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button class="btn btn-secondary btn-sm" onclick="replaceSleepImg('${d}')">Replace photo</button>
+                <button class="btn btn-secondary btn-sm" onclick="analyzeSleepImg('${d}')">${sparkIcon()} Re-analyze</button>
+              </div>
+            </div>`
+          : `<div class="upload-zone" onclick="addSleepImg('${d}')"><div class="upload-zone-icon">${uploadIcon()}</div><div class="upload-zone-label">Garmin sleep summary</div><div class="upload-zone-sub">Screenshot of your sleep stats — AI auto-analyzes</div></div>`}
+        ${m.sleepAiSummary?`<div style="padding:12px;background:var(--cream-dim);border:1px solid var(--cream-border);border-radius:8px;font-size:13px;line-height:1.6">${m.sleepAiSummary.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').split('\n\n').map(p=>`<p style="margin-bottom:8px">${p.replace(/\n/g,'<br>')}</p>`).join('')}</div>`:''}
       </div>`;
     })()}
   `;
@@ -933,7 +1008,7 @@ function setSleepTime(d, field, val) {
   m.sleepHours = total > 0 ? Math.round(total*100)/100 : null;
   save();
 }
-function addSleepImg(d) { pickImg(data=>{ S.imgs['sleep-img-'+d]=data; save(); renderHealthContent(); }); }
+function addSleepImg(d) { pickImg(data=>{ S.imgs['sleep-img-'+d]=data; save(); renderHealthContent(); if(S.settings.apiKey) analyzeSleepImg(d); }); }
 function replaceSleepImg(d) { pickImg(data=>{ S.imgs['sleep-img-'+d]=data; save(); renderHealthContent(); }); }
 async function analyzeSleepImg(d) {
   const imgData = S.imgs['sleep-img-'+d];
@@ -980,93 +1055,128 @@ function saveMorningCheckin(d) {
 // ─── LOG TAB ──────────────────────────────────────────────────
 function renderLogContent() {
   const el = document.getElementById('tab-log');
-  const subTabs = [{id:'session',label:'Session'},{id:'garmin',label:'Garmin'},{id:'nutrition',label:'Nutrition'}];
+  const subTabs = [{id:'garmin',label:'Session'},{id:'strength',label:'Strength'},{id:'nutrition',label:'Nutrition'}];
   const subNav = `<div class="sub-tabs">${subTabs.map(t=>`<div class="sub-tab ${S.logSubTab===t.id?'active':''}" onclick="S.logSubTab='${t.id}';renderLogContent()">${t.label}</div>`).join('')}</div>`;
   let body = '';
-  if (S.logSubTab==='session') body = renderLogSession();
-  else if (S.logSubTab==='garmin') body = renderLogGarmin();
+  if (S.logSubTab==='garmin') body = renderLogGarmin();
+  else if (S.logSubTab==='strength') body = renderLogStrength();
   else if (S.logSubTab==='nutrition') body = renderLogNutrition();
   el.innerHTML = subNav + body;
 }
 
-function renderLogSession() {
+function renderLogStrength() {
   const d = S.selDate;
-  const session = dayLog(d).session;
-  const soreChips = SORENESS_AREAS.map(a=>`<div class="chip ${session.soreness.includes(a)?'active':''}" onclick="toggleSoreness('${d}','${a}')">${a}</div>`).join('');
-  const shoeOpts = S.settings.shoes.map(s=>`<option value="${s.id}" ${session.shoeId===s.id?'selected':''}>${s.name}</option>`).join('');
-  const workoutCards = (session.workouts||[]).map((w)=>`
-    <div class="workout-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span class="workout-type-badge badge-${TYPE_BADGE[w.type]||'gpp'}">${w.type}</span>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-sm" onclick="openWorkoutEdit('${d}','${w.id}')">Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteWorkout('${d}','${w.id}')">✕</button>
-        </div>
+  const str = dayLog(d).strength;
+  const lifts = str.lifts || [];
+  const exOpts = EXERCISE_GROUPS.map(g=>`<optgroup label="${g.label}">${g.items.map(item=>`<option value="${item}">${item}</option>`).join('')}</optgroup>`).join('');
+  const liftCards = lifts.map((lift,li)=>{
+    const prevHint = S.exHistory[(lift.name||'').toLowerCase()];
+    const hintHtml = prevHint ? `<div class="prev-hint"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Last (${fmtDate(prevHint.date)}): ${prevHint.sets.map(s=>s.isBodyweight?`BW×${s.r||'—'}`:((s.w||'—')+'×'+(s.r||'—'))).join(', ')}</div>` : '';
+    const setRows = (lift.sets||[]).map((s,si)=>`
+      <div class="set-row">
+        <span class="set-num">${si+1}</span>
+        <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--muted2);cursor:pointer;min-width:28px" title="Bodyweight">
+          <input type="checkbox" ${s.isBodyweight?'checked':''} onchange="saveStrengthSet('${d}',${li},${si},'isBodyweight',this.checked)"> BW
+        </label>
+        ${!s.isBodyweight?`<input class="set-input" type="number" placeholder="lbs" value="${s.w||''}" oninput="saveStrengthSet('${d}',${li},${si},'w',+this.value||null)">
+        <span class="set-x">×</span>`:'<span style="min-width:65px"></span><span class="set-x">×</span>'}
+        <input class="set-input" type="number" placeholder="reps" value="${s.r||''}" oninput="saveStrengthSet('${d}',${li},${si},'r',+this.value||null)">
+        <button class="btn btn-ghost btn-sm" style="padding:2px 6px;color:var(--muted)" onclick="deleteStrengthSet('${d}',${li},${si})">✕</button>
+      </div>`).join('');
+    const selOpts = exOpts.replace(`value="${lift.name}"`,`value="${lift.name}" selected`);
+    return `<div class="workout-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <select class="input input-sm" style="flex:1" onchange="saveStrengthField('${d}',${li},'name',this.value);renderLogContent()">
+          <option value="">— Select exercise —</option>
+          ${selOpts}
+        </select>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteStrengthLift('${d}',${li})">✕</button>
       </div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">${w.name}</div>
-      ${w.format?`<div class="text-sm text-muted mb-2">${w.format}${w.formatVal?' '+w.formatVal:''}${w.sets&&w.sets>1?' × '+w.sets+' sets':''}</div>`:''}
-      ${(w.movements||[]).length?`<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:8px">${w.movements.map(mv=>`<div class="movement-row" style="padding:6px 8px"><span class="movement-name">${mv.name}</span><span class="movement-target">${mv.target||''}</span><span class="movement-actual">${mv.actual||'—'}</span></div>`).join('')}</div>`:''}
-      ${(w.exercises||[]).length?`<div style="margin-bottom:8px">${w.exercises.map(ex=>`<div style="margin-bottom:6px"><div style="font-size:13px;font-weight:600;margin-bottom:3px">${ex.name}</div><div style="display:flex;flex-wrap:wrap;gap:4px">${(ex.sets||[]).map(s=>`<span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:12px">${s.w||'—'}×${s.r||'—'}</span>`).join('')}</div></div>`).join('')}</div>`:''}
-      ${w.result?`<div style="font-size:13px;padding:6px 8px;background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:6px;margin-bottom:6px"><strong>Result:</strong> ${w.result}</div>`:''}
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        ${w.rpe?`<div class="text-sm" style="color:var(--accent)">RPE ${w.rpe}/10</div>`:''}
-        ${w.shoeId&&S.settings.shoes.find(s=>s.id===w.shoeId)?`<div class="text-sm text-muted">${S.settings.shoes.find(s=>s.id===w.shoeId).name}</div>`:''}
-      </div>
-    </div>`).join('');
-  return `
-    <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Session · ${fmtDate(d)}</span><span style="font-size:12px;color:var(--muted2)">${fmtDay(d)}</span>
-    </div>
-    <div class="card">
-      <div class="input-group" style="margin:0"><label class="label">Soreness</label><div class="chip-group">${soreChips}</div></div>
-    </div>
+      ${hintHtml}
+      ${setRows}
+      <button class="btn btn-secondary btn-sm mt-2" onclick="addStrengthSet('${d}',${li})">+ Set</button>
+    </div>`;
+  }).join('');
+  return `<div class="section-header">Strength · ${fmtDate(d)}</div>
     <div style="padding:0 16px">
-      ${workoutCards}
-      <button class="btn btn-primary btn-full" onclick="openWorkoutAdd('${d}')">+ Add Workout Block</button>
-    </div>
-    <div class="card" style="margin-top:12px">
-      <div class="input-group" style="margin:0"><label class="label">Session Notes</label><textarea class="input" rows="3" placeholder="How did it feel?" oninput="dayLog('${d}').session.notes=this.value;save()">${session.notes||''}</textarea></div>
+      ${liftCards}
+      <button class="btn btn-primary btn-full" onclick="addStrengthLift('${d}')">+ Add Exercise</button>
     </div>`;
 }
 
 function renderLogGarmin() {
   const d = S.selDate;
-  const sessions = dayLog(d).garmin.sessions || [];
-  const hasAnyImgs = sessions.some(s=>(s.imgs||[]).length>0);
-  const daySummary = dayLog(d).garmin.aiSummary;
+  const gl = dayLog(d).garmin;
+  const sessions = gl.sessions || [];
+  const dow = dayOfWeek(d);
+  const scheduledLabel = SCHEDULE[dow] || '';
+  const defSType = SCHEDULE_SESSION_TYPE[scheduledLabel] || '';
+  const defRType = SCHEDULE_RUN_TYPE[scheduledLabel] || '';
   const sessionCards = sessions.map((s,i)=>{
+    const sType = s.sessionType || defSType;
+    const isMono = sType === 'Monostructural';
     const imgThumbs = (s.imgs||[]).map(key=>`<img class="img-thumb" src="${S.imgs[key]||''}" onclick="viewImg('${key}')">`).join('');
+    const intervalRows = (s.intervalSets||[]).map((iv,ii)=>`
+      <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
+        <span style="color:var(--muted);font-size:11px;min-width:18px">${ii+1}</span>
+        <input class="input input-sm" style="flex:1" placeholder="Dist mi" value="${iv.dist||''}" oninput="dayLog('${d}').garmin.sessions[${i}].intervalSets[${ii}].dist=this.value;save()">
+        <input class="input input-sm" style="flex:1" placeholder="Time" value="${iv.time||''}" oninput="dayLog('${d}').garmin.sessions[${i}].intervalSets[${ii}].time=this.value;save()">
+        <input class="input input-sm" style="flex:1" placeholder="Pace" value="${iv.pace||''}" oninput="dayLog('${d}').garmin.sessions[${i}].intervalSets[${ii}].pace=this.value;save()">
+        <button class="btn btn-ghost btn-sm" style="padding:2px 6px;color:var(--red)" onclick="dayLog('${d}').garmin.sessions[${i}].intervalSets.splice(${ii},1);save();renderLogContent()">✕</button>
+      </div>`).join('');
     return `<div class="garmin-session">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <input class="input input-sm" style="max-width:200px" placeholder="Tag (e.g. Threshold Run)" value="${s.tag||''}" oninput="dayLog('${d}').garmin.sessions[${i}].tag=this.value;save()">
+        <input class="input input-sm" style="flex:1;margin-right:8px" placeholder="Label (e.g. Warmup, Main Set)" value="${s.tag||''}" oninput="dayLog('${d}').garmin.sessions[${i}].tag=this.value;save()">
         <button class="btn btn-danger btn-sm" onclick="deleteGarminSession('${d}',${i})">✕</button>
       </div>
-      <div class="img-grid">${imgThumbs}<div class="img-add" onclick="addGarminImg('${d}',${i})">+</div></div>
+      <div class="input-row input-row-2" style="margin-bottom:8px">
+        <div class="input-group" style="margin:0">
+          <label class="label">Session Type</label>
+          <select class="input input-sm" onchange="dayLog('${d}').garmin.sessions[${i}].sessionType=this.value;save();renderLogContent()">
+            <option value="">— Select —</option>
+            ${['Monostructural','GPP','Applied Strength','Gross Conditioning','Extra Credit'].map(t=>`<option value="${t}" ${sType===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        ${isMono?`<div class="input-group" style="margin:0">
+          <label class="label">Run Type</label>
+          <select class="input input-sm" onchange="dayLog('${d}').garmin.sessions[${i}].runType=this.value;save()">
+            <option value="">— Select —</option>
+            ${RUN_TYPES.map(t=>`<option value="${t}" ${(s.runType||defRType)===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>`:'<div></div>'}
+      </div>
+      <div class="img-grid">${imgThumbs}<div class="img-add" onclick="addGarminImgs('${d}',${i})" title="Add photos (multi-select supported)">+</div></div>
       <div class="input-row input-row-2 mt-2">
         <div class="input-group" style="margin:0"><label class="label">Dist (mi)</label><input class="input input-sm" type="number" step="0.01" placeholder="5.2" value="${s.manual?.dist||''}" oninput="dayLog('${d}').garmin.sessions[${i}].manual=dayLog('${d}').garmin.sessions[${i}].manual||{};dayLog('${d}').garmin.sessions[${i}].manual.dist=this.value;save()"></div>
-        <div class="input-group" style="margin:0"><label class="label">Avg Pace</label><input class="input input-sm" placeholder="8:30" value="${s.manual?.pace||''}" oninput="dayLog('${d}').garmin.sessions[${i}].manual=dayLog('${d}').garmin.sessions[${i}].manual||{};dayLog('${d}').garmin.sessions[${i}].manual.pace=this.value;save()"></div>
-      </div>
-      <div class="input-row input-row-2">
         <div class="input-group" style="margin:0"><label class="label">Avg HR</label><input class="input input-sm" type="number" placeholder="148" value="${s.manual?.hr||''}" oninput="dayLog('${d}').garmin.sessions[${i}].manual=dayLog('${d}').garmin.sessions[${i}].manual||{};dayLog('${d}').garmin.sessions[${i}].manual.hr=this.value;save()"></div>
+      </div>
+      ${isMono?`<div class="input-row input-row-2">
+        <div class="input-group" style="margin:0"><label class="label">Avg Pace</label><input class="input input-sm" placeholder="8:30" value="${s.manual?.pace||''}" oninput="dayLog('${d}').garmin.sessions[${i}].manual=dayLog('${d}').garmin.sessions[${i}].manual||{};dayLog('${d}').garmin.sessions[${i}].manual.pace=this.value;save()"></div>
         <div class="input-group" style="margin:0"><label class="label">Cadence</label><input class="input input-sm" type="number" placeholder="172" value="${s.manual?.cad||''}" oninput="dayLog('${d}').garmin.sessions[${i}].manual=dayLog('${d}').garmin.sessions[${i}].manual||{};dayLog('${d}').garmin.sessions[${i}].manual.cad=this.value;save()"></div>
       </div>
       ${S.settings.shoes.length?`<div class="input-group" style="margin:4px 0 0"><label class="label">Shoes worn</label><select class="input input-sm" onchange="dayLog('${d}').garmin.sessions[${i}].shoeId=this.value||null;save()"><option value="">No shoe</option>${S.settings.shoes.map(sh=>`<option value="${sh.id}" ${s.shoeId===sh.id?'selected':''}>${sh.name}</option>`).join('')}</select></div>`:''}
-    </div>`;
-  }).join('');
-  return `<div class="section-header">Garmin · ${fmtDate(d)}</div>
-    <div style="padding:0 16px">
-      ${sessionCards}
-      <button class="btn btn-primary btn-full" onclick="addGarminSession('${d}')">+ Add Session</button>
-      ${hasAnyImgs?`<button class="btn btn-secondary btn-full" style="margin-top:8px" onclick="analyzeAllGarminSessions('${d}')">${sparkIcon()} Analyze ${sessions.length>1?'All Sessions':'Session'} with AI</button>`:''}
-      ${daySummary?`
-      <div class="advice-card" style="margin-top:12px">
-        <div class="advice-header" style="justify-content:space-between">
-          <span style="display:flex;align-items:center;gap:6px">${sparkIcon()} Training Analysis · ${fmtDate(d)}</span>
-          <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:11px" onclick="analyzeAllGarminSessions('${d}')">Refresh</button>
-        </div>
-        <div class="advice-body">${daySummary.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>
+      <div style="margin-top:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Intervals / Sets</div>
+        ${intervalRows}
+        <button class="btn btn-secondary btn-sm" onclick="addIntervalSet('${d}',${i})">+ Add Set</button>
       </div>`:''}
     </div>`;
+  }).join('');
+  const soreChips = SORENESS_AREAS.map(a=>`<div class="chip ${(gl.soreness||[]).includes(a)?'active':''}" onclick="toggleGarminSoreness('${d}','${a}')">${a}</div>`).join('');
+  return `<div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+    <span>Session · ${fmtDate(d)}</span>
+    <span style="font-size:12px;color:var(--accent);font-weight:600">${scheduledLabel}</span>
+  </div>
+  <div style="padding:0 16px">
+    ${sessionCards}
+    <button class="btn btn-primary btn-full" onclick="addGarminSession('${d}')">+ Add Session</button>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="input-group" style="margin:0"><label class="label">Soreness</label><div class="chip-group">${soreChips}</div></div>
+  </div>
+  <div class="card">
+    <div class="input-group" style="margin:0"><label class="label">Session Notes</label><textarea class="input" rows="3" placeholder="How did the session feel?" oninput="dayLog('${d}').garmin.notes=this.value;save()">${gl.notes||''}</textarea></div>
+  </div>`;
 }
 
 function renderLogNutrition() {
@@ -1111,12 +1221,27 @@ function toggleSoreness(d, area) {
   if (idx>=0) s.soreness.splice(idx,1); else s.soreness.push(area);
   save(); renderLogContent();
 }
+function toggleGarminSoreness(d, area) {
+  const gl = dayLog(d).garmin;
+  const idx = (gl.soreness||[]).indexOf(area);
+  if (idx>=0) gl.soreness.splice(idx,1); else gl.soreness.push(area);
+  save(); renderLogContent();
+}
+function addIntervalSet(d, sessionIdx) {
+  if (!dayLog(d).garmin.sessions[sessionIdx].intervalSets) dayLog(d).garmin.sessions[sessionIdx].intervalSets=[];
+  dayLog(d).garmin.sessions[sessionIdx].intervalSets.push({dist:'',time:'',pace:''});
+  save(); renderLogContent();
+}
 function deleteWorkout(d, id) {
   dayLog(d).session.workouts = dayLog(d).session.workouts.filter(w=>w.id!==id);
   save(); renderLogContent();
 }
 function addGarminSession(d) {
-  dayLog(d).garmin.sessions.push({tag:'',imgs:[],manual:{},shoeId:null});
+  const dow = dayOfWeek(d);
+  const scheduledLabel = SCHEDULE[dow]||'';
+  const sessionType = SCHEDULE_SESSION_TYPE[scheduledLabel]||'';
+  const runType = SCHEDULE_RUN_TYPE[scheduledLabel]||'';
+  dayLog(d).garmin.sessions.push({tag:'',imgs:[],manual:{},shoeId:null,sessionType,runType,intervalSets:[]});
   save(); renderLogContent();
 }
 function deleteGarminSession(d, i) {
@@ -1125,14 +1250,19 @@ function deleteGarminSession(d, i) {
   sessions.splice(i,1);
   save(); renderLogContent();
 }
-function addGarminImg(d, idx) {
-  pickImg(data=>{
-    const key = 'garmin-'+d+'-'+idx+'-'+uid();
-    S.imgs[key] = data;
+function addGarminImg(d, idx) { addGarminImgs(d, idx); }
+function addGarminImgs(d, idx) {
+  pickMultiImg(dataArr=>{
     const sessions = dayLog(d).garmin.sessions;
     if (!sessions[idx].imgs) sessions[idx].imgs=[];
-    sessions[idx].imgs.push(key);
+    dataArr.forEach(data=>{
+      const key = 'garmin-'+d+'-'+idx+'-'+uid();
+      S.imgs[key] = data;
+      sessions[idx].imgs.push(key);
+    });
     save(); renderLogContent();
+    if (S.tab==='progress') renderProgressContent();
+    if (S.settings.apiKey) autoAnalyzeGarminSession(d, idx);
   });
 }
 async function analyzeAllGarminSessions(d) {
@@ -1170,6 +1300,29 @@ Be precise, reference specific numbers, and write like a coach who demands excel
     dayLog(d).garmin.aiSummary = text;
     save(); renderLogContent(); showToast('Analysis complete ✓');
   } catch(e) { showToast('Error: '+e.message); }
+}
+async function autoAnalyzeGarminSession(d, idx) {
+  const s = dayLog(d).garmin.sessions[idx];
+  if (!s?.imgs?.length) return;
+  const allImgs = s.imgs.map(k=>S.imgs[k]).filter(Boolean);
+  if (!allImgs.length) return;
+  showToast('AI analyzing session…');
+  const isMono = (s.sessionType||'') === 'Monostructural' || !(s.sessionType||'');
+  try {
+    const result = await aiJSON(
+      isMono
+        ? 'Extract running data from this Garmin screenshot. Return JSON: {"dist":"miles as string or null","pace":"MM:SS format or null","hr":"bpm as string or null","cad":"spm as string or null"}. Use null for any field not visible.'
+        : 'Extract workout data from this Garmin screenshot. Return JSON: {"dist":"miles as string or null","hr":"bpm as string or null"}. Use null for any field not visible.',
+      allImgs
+    );
+    if (!dayLog(d).garmin.sessions[idx].manual) dayLog(d).garmin.sessions[idx].manual = {};
+    const m = dayLog(d).garmin.sessions[idx].manual;
+    if (result.dist != null && result.dist !== 'null') m.dist = String(result.dist);
+    if (result.pace != null && result.pace !== 'null') m.pace = String(result.pace);
+    if (result.hr != null && result.hr !== 'null') m.hr = String(result.hr);
+    if (result.cad != null && result.cad !== 'null') m.cad = String(result.cad);
+    save(); renderLogContent(); showToast('Fields auto-filled ✓');
+  } catch(e) { showToast('Auto-fill: '+e.message); }
 }
 function addNutImg(d) { pickImg(data=>{ S.imgs['nut-'+d]=data; save(); renderLogContent(); }); }
 function replaceNutImg(d) { pickImg(data=>{ S.imgs['nut-'+d]=data; save(); renderLogContent(); }); }
@@ -1291,6 +1444,36 @@ function saveWorkout() {
   save(); closeModal('workoutModal'); renderLogContent(); showToast('Workout saved ✓');
 }
 
+// ─── STRENGTH HELPERS ────────────────────────────────────────
+function addStrengthLift(d) {
+  dayLog(d).strength.lifts.push({id:uid(),name:'',sets:[{w:null,isBodyweight:false,r:null}]});
+  save(); renderLogContent();
+}
+function deleteStrengthLift(d, li) {
+  const lift = dayLog(d).strength.lifts[li];
+  if (lift?.name) S.exHistory[lift.name.toLowerCase()] = {date:d, sets:(lift.sets||[]).filter(s=>s.w||s.r||s.isBodyweight)};
+  dayLog(d).strength.lifts.splice(li,1);
+  save(); renderLogContent();
+}
+function addStrengthSet(d, li) {
+  dayLog(d).strength.lifts[li].sets.push({w:null,isBodyweight:false,r:null});
+  save(); renderLogContent();
+}
+function deleteStrengthSet(d, li, si) {
+  dayLog(d).strength.lifts[li].sets.splice(si,1);
+  save(); renderLogContent();
+}
+function saveStrengthSet(d, li, si, field, val) {
+  dayLog(d).strength.lifts[li].sets[si][field] = val;
+  const lift = dayLog(d).strength.lifts[li];
+  if (lift?.name) S.exHistory[lift.name.toLowerCase()] = {date:d, sets:(lift.sets||[]).filter(s=>s.w||s.r||s.isBodyweight)};
+  save();
+}
+function saveStrengthField(d, li, field, val) {
+  dayLog(d).strength.lifts[li][field] = val;
+  save();
+}
+
 // ─── TOP BAR ─────────────────────────────────────────────────
 function currentWeekNum() {
   const start = S.settings.trainStart;
@@ -1370,68 +1553,96 @@ function goToday() {
 // ─── PROGRESS TAB ─────────────────────────────────────────────
 function renderProgressContent() {
   const el = document.getElementById('tab-progress');
+  const view = S.progressView || 'weekly';
 
-  // Collect pace data (from garmin sessions with manual pace)
-  const paceData = [];
-  const weightData = [];
+  function periodKey(d) {
+    if (view==='weekly') return weekStart(d);
+    return d.slice(0,7);
+  }
+  function periodLabel(k) {
+    if (view==='weekly') return fmtDate(k);
+    const dt = new Date(k+'-01T12:00:00');
+    return dt.toLocaleDateString('en-US',{month:'short',year:'numeric'});
+  }
+
+  const paceRaw = [], weightRaw = [], milesRaw = [];
   const sortedDates = Object.keys(S.logs).sort();
+
   sortedDates.forEach(d=>{
     const log = S.logs[d];
-    // Pace from garmin
-    const garminSessions = log?.garmin?.sessions||[];
-    garminSessions.forEach(s=>{
+    (log?.garmin?.sessions||[]).forEach(s=>{
       if (s.manual?.pace) {
         const parts = s.manual.pace.split(':');
         if (parts.length===2) {
           const mins = parseFloat(parts[0]) + parseFloat(parts[1])/60;
-          paceData.push({x:d, y:mins, label:s.tag||'Run'});
+          if (!isNaN(mins)) paceRaw.push({d, y:mins});
         }
       }
+      const dist = parseFloat(s.manual?.dist)||0;
+      if (dist) milesRaw.push({d, y:dist});
     });
-    // Weight from morning
     const w = log?.morning?.weight;
-    if (w) weightData.push({x:d, y:w});
+    if (w) weightRaw.push({d, y:w});
   });
 
-  // Shoe mileage (base = manually added extraMiles, auto += Garmin sessions)
+  // Aggregate by period
+  function aggregate(raw, mode='avg') {
+    const map = {};
+    raw.forEach(p=>{
+      const k = periodKey(p.d);
+      if (!map[k]) map[k]={sum:0,count:0};
+      map[k].sum += p.y; map[k].count++;
+    });
+    return Object.keys(map).sort().map(k=>({x:k, y:mode==='avg'?map[k].sum/map[k].count:map[k].sum}));
+  }
+
+  const paceData = aggregate(paceRaw, 'avg');
+  const weightData = aggregate(weightRaw, 'avg');
+  const milesData = aggregate(milesRaw, 'sum');
+
+  const totalMiles = milesRaw.reduce((acc,p)=>acc+p.y, 0);
+
+  // Shoe mileage
   const shoeMiles = {};
   S.settings.shoes.forEach(shoe=>{ shoeMiles[shoe.id] = shoe.extraMiles || 0; });
   sortedDates.forEach(d=>{
-    const log = S.logs[d];
-    const garminSessions = log?.garmin?.sessions||[];
-    garminSessions.forEach(s=>{
+    (S.logs[d]?.garmin?.sessions||[]).forEach(s=>{
       const dist = parseFloat(s.manual?.dist)||0;
       if (!dist || !s.shoeId) return;
       if (shoeMiles.hasOwnProperty(s.shoeId)) shoeMiles[s.shoeId] += dist;
     });
   });
 
-  const maxMiles = Math.max(1, ...Object.values(shoeMiles));
-
-  const totalSessions = sortedDates.filter(d=>S.logs[d]?.session?.workouts?.length>0).length;
-  const totalRuns = sortedDates.reduce((acc,d)=>{
-    const ws = S.logs[d]?.session?.workouts||[];
-    return acc + ws.filter(w=>w.type==='Run').length;
-  }, 0);
+  const totalSessions = sortedDates.filter(d=>hasGarminSessions(d)||hasStrength(d)).length;
 
   el.innerHTML = `
     <div class="section-header">Progress</div>
 
-    <div class="card" style="margin:0 16px 12px;display:flex;gap:24px">
+    <div class="view-toggle" style="margin-bottom:0">
+      <button class="view-toggle-btn ${view==='weekly'?'active':''}" onclick="S.progressView='weekly';renderProgressContent()">Weekly</button>
+      <button class="view-toggle-btn ${view==='monthly'?'active':''}" onclick="S.progressView='monthly';renderProgressContent()">Monthly</button>
+    </div>
+
+    <div class="card" style="margin:12px 16px;display:flex;gap:24px;flex-wrap:wrap">
       <div>
         <div style="font-size:28px;font-weight:700;color:var(--text);line-height:1">${totalSessions}</div>
         <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Sessions logged</div>
       </div>
       <div style="width:1px;background:var(--border)"></div>
       <div>
-        <div style="font-size:28px;font-weight:700;color:var(--text);line-height:1">${totalRuns}</div>
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Runs logged</div>
+        <div style="font-size:28px;font-weight:700;color:var(--accent);line-height:1">${totalMiles.toFixed(1)}</div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Total miles</div>
       </div>
+    </div>
+
+    <div class="card-title-lg" style="padding:0 16px 8px">Miles Logged</div>
+    <div class="chart-wrap">
+      ${milesData.length?`<canvas id="milesChart"></canvas>`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:14px">Log sessions to see miles</div>`}
     </div>
 
     <div class="card-title-lg" style="padding:0 16px 8px">Running Pace Trend</div>
     <div class="chart-wrap">
-      ${paceData.length?`<canvas id="paceChart"></canvas>`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:14px">Log runs in Garmin tab to see trend</div>`}
+      ${paceData.length?`<canvas id="paceChart"></canvas>`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:14px">Log runs with pace to see trend</div>`}
     </div>
 
     <div class="card-title-lg" style="padding:0 16px 8px">Body Weight</div>
@@ -1452,23 +1663,19 @@ function renderProgressContent() {
     </div>`:''}
   `;
 
-  // Draw charts after DOM is ready
   setTimeout(()=>{
+    const chartOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#6B7D7A'},grid:{color:'#263030'}},x:{ticks:{color:'#6B7D7A',maxTicksLimit:7},grid:{color:'#263030'}}}};
+    if (milesData.length) {
+      const ctx = document.getElementById('milesChart');
+      if (ctx) new Chart(ctx, {type:'bar',data:{labels:milesData.map(p=>periodLabel(p.x)),datasets:[{label:'Miles',data:milesData.map(p=>p.y),backgroundColor:'rgba(219,101,101,0.6)',borderColor:'#DB6565',borderWidth:1,borderRadius:4}]},options:{...chartOpts}});
+    }
     if (paceData.length) {
       const ctx = document.getElementById('paceChart');
-      if (ctx) new Chart(ctx, {
-        type:'line',
-        data:{labels:paceData.map(p=>fmtDate(p.x)),datasets:[{label:'Pace (min/mi)',data:paceData.map(p=>p.y),borderColor:'#DB6565',backgroundColor:'rgba(219,101,101,0.1)',fill:true,tension:.3,pointBackgroundColor:'#DB6565',pointRadius:4}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{reverse:true,ticks:{color:'#6B7D7A',callback:v=>{const m=Math.floor(v);const s=Math.round((v-m)*60);return m+':'+(s<10?'0':'')+s}},grid:{color:'#263030'}},x:{ticks:{color:'#6B7D7A',maxTicksLimit:6},grid:{color:'#263030'}}}}
-      });
+      if (ctx) new Chart(ctx, {type:'line',data:{labels:paceData.map(p=>periodLabel(p.x)),datasets:[{label:'Avg Pace',data:paceData.map(p=>p.y),borderColor:'#DB6565',backgroundColor:'rgba(219,101,101,0.1)',fill:true,tension:.3,pointBackgroundColor:'#DB6565',pointRadius:4}]},options:{...chartOpts,scales:{...chartOpts.scales,y:{...chartOpts.scales.y,reverse:true,ticks:{color:'#6B7D7A',callback:v=>{const m=Math.floor(v);const s=Math.round((v-m)*60);return m+':'+(s<10?'0':'')+s}}}}}});
     }
     if (weightData.length) {
       const ctx = document.getElementById('weightChart');
-      if (ctx) new Chart(ctx, {
-        type:'line',
-        data:{labels:weightData.map(p=>fmtDate(p.x)),datasets:[{label:'Weight (lbs)',data:weightData.map(p=>p.y),borderColor:'#799C62',backgroundColor:'rgba(121,156,98,0.1)',fill:true,tension:.3,pointBackgroundColor:'#799C62',pointRadius:4}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#6B7D7A'},grid:{color:'#263030'}},x:{ticks:{color:'#6B7D7A',maxTicksLimit:6},grid:{color:'#263030'}}}}
-      });
+      if (ctx) new Chart(ctx, {type:'line',data:{labels:weightData.map(p=>periodLabel(p.x)),datasets:[{label:'Weight (lbs)',data:weightData.map(p=>p.y),borderColor:'#799C62',backgroundColor:'rgba(121,156,98,0.1)',fill:true,tension:.3,pointBackgroundColor:'#799C62',pointRadius:4}]},options:{...chartOpts}});
     }
   }, 50);
 }
@@ -1476,23 +1683,40 @@ function renderProgressContent() {
 // ─── PLAN TAB ─────────────────────────────────────────────────
 function renderPlanContent() {
   const el = document.getElementById('tab-plan');
-  const msgs = S.chatHistory.map(m=>`
-    <div class="chat-msg ${m.role==='user'?'user':'ai'}">${m.content.replace(/\n/g,'<br>')}</div>
-  `).join('');
 
-  const coachSnapKey = 'coach-summary-'+today();
+  const coachSnapKey = 'coach-summary-'+weekStart(today());
   const coachSnap = S.summaries[coachSnapKey];
 
-  const fmtAI = t => t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  // Auto-generate weekly summary if not yet done
+  if (!coachSnap && S.settings.apiKey) {
+    setTimeout(()=>generateCoachSummary(), 100);
+  }
+
+  const fmtAI = t => t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').split('\n\n').map(p=>`<p style="margin-bottom:6px">${p.replace(/\n/g,'<br>')}</p>`).join('');
+
+  const msgs = S.chatHistory.map(m=>`
+    <div class="chat-msg ${m.role==='user'?'user':'ai'}">${m.content.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>
+  `).join('');
 
   el.innerHTML = `
     <div class="section-header">Weekly Summary</div>
-    <div class="advice-card" style="margin:0 16px 12px">
+    <div class="advice-card" style="margin:0 16px 4px">
       <div class="advice-header" style="justify-content:space-between">
-        <span style="display:flex;align-items:center;gap:6px">${sparkIcon()} Coach Santa Claude · This week</span>
-        <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:11px" onclick="generateCoachSummary()">${coachSnap&&coachSnap!=='loading'?'Refresh':'Generate'}</button>
+        <span style="display:flex;align-items:center;gap:6px">${sparkIcon()} Coach Santa Claude · Week of ${fmtDate(weekStart(today()))}</span>
+        <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:11px" onclick="generateCoachSummary()">Refresh</button>
       </div>
-      ${coachSnap==='loading'?`<div class="advice-loading"><div class="spinner"></div> Analyzing your week...</div>`:coachSnap?`<div class="advice-body">${fmtAI(coachSnap)}</div>`:`<div class="advice-body text-muted" style="font-size:13px">Tap Generate for a weekly performance summary from Coach Santa Claude.</div>`}
+      ${coachSnap==='loading'?`<div class="advice-loading"><div class="spinner"></div> Analyzing your week...</div>`:coachSnap?`<div class="advice-body">${fmtAI(coachSnap)}</div>`:`<div class="advice-loading"><div class="spinner"></div> Generating weekly summary…</div>`}
+    </div>
+    <div style="padding:0 16px 12px;display:flex;gap:8px">
+      <button class="btn btn-secondary btn-sm" onclick="delete S.summaries['${S.selDate+'-advice'}'];save();switchTab('today')">${sparkIcon(13)} Today's coaching</button>
+    </div>
+
+    <div class="section-header">My Goals</div>
+    <div class="card" style="margin-bottom:4px">
+      <div class="input-group" style="margin:0">
+        <label class="label">Current training goals</label>
+        <textarea class="input" rows="3" placeholder="e.g. Sub-60 Hyrox, lose 5 lbs before race, hit 40 mpw..." onblur="S.settings.goals=this.value;save()">${S.settings.goals||''}</textarea>
+      </div>
     </div>
 
     <div class="section-header">Program Screenshots</div>
@@ -1524,7 +1748,6 @@ function renderPlanContent() {
     </div>
   `;
 
-  // Scroll chat to bottom
   setTimeout(()=>{ const ca=document.getElementById('chatArea'); if(ca)ca.scrollTop=ca.scrollHeight; }, 50);
 }
 
@@ -1694,7 +1917,22 @@ function render() {
 // ─── INIT ─────────────────────────────────────────────────────
 loadState();
 render();
-document.getElementById('pwaIcon').href = SANTA_ICON_180;
+// PWA icon: render Santa on dark background for iOS home screen
+(function setPwaIcon() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 180; canvas.height = 180;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0E1111';
+  ctx.fillRect(0,0,180,180);
+  const img = new Image();
+  img.onload = function() {
+    ctx.drawImage(img,10,10,160,160);
+    canvas.toBlob(function(blob) {
+      if (blob) document.getElementById('pwaIcon').href = URL.createObjectURL(blob);
+    },'image/png');
+  };
+  img.src = SANTA_ICON_180;
+})();
 </script>
 </body>
 </html>
