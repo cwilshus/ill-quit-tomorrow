@@ -713,6 +713,12 @@ function recentSummary() {
   return days.length ? `Recent 7 days — ${days.join(' | ')}` : 'No recent logs.';
 }
 
+// ─── AI TEXT FORMATTER ───────────────────────────────────────
+function fmtAI(t) {
+  if (!t) return '';
+  return t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').split('\n\n').map(p=>`<p style="margin-bottom:6px">${p.replace(/\n/g,'<br>')}</p>`).join('');
+}
+
 // ─── AI CALLS ─────────────────────────────────────────────────
 async function aiJSON(prompt, imgDataArr=[]) {
   const key = S.settings.apiKey;
@@ -969,7 +975,9 @@ function renderDayView(d) {
   } else if (S.summaries[d+'-advice'] === 'loading') {
     html += `<div class="advice-card"><div class="advice-header">${sparkIcon()} Coach Santa Claude</div><div class="advice-loading"><div class="spinner"></div> Analyzing your data...</div></div>`;
   } else if (S.summaries[d+'-advice']) {
-    html += `<div class="advice-card"><div class="advice-header">${sparkIcon()} Coach Santa Claude — ${fmtDay(d)} Advice</div><div class="advice-body">${S.summaries[d+'-advice']}</div></div>`;
+    html += `<div class="advice-card"><div class="advice-header">${sparkIcon()} Coach Santa Claude — ${fmtDay(d)} Advice</div><div class="advice-body">${fmtAI(S.summaries[d+'-advice'])}</div></div>`;
+  } else if (S.summaries[d+'-advice'] === null) {
+    html += `<div class="advice-card"><div class="advice-header">${sparkIcon()} Coach Santa Claude</div><div class="advice-body text-muted" style="display:flex;align-items:center;gap:8px">Couldn't generate advice. Check API key in Settings. <button class="btn btn-ghost btn-sm" onclick="delete S.summaries['${d}-advice'];renderTodayContent()">Retry</button></div></div>`;
   }
 
   // Weekly coach summary banner (today only)
@@ -1225,7 +1233,6 @@ function saveMorningCheckin(d) {
     document.getElementById('tab-today').classList.add('active');
     renderBottomNav();
     renderTodayContent();
-    getAdvice(d);
   }
 }
 
@@ -1873,7 +1880,6 @@ function renderPlanContent() {
     setTimeout(()=>generateCoachSummary(), 100);
   }
 
-  const fmtAI = t => t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').split('\n\n').map(p=>`<p style="margin-bottom:6px">${p.replace(/\n/g,'<br>')}</p>`).join('');
 
   const msgs = S.chatHistory.map(m=>`
     <div class="chat-msg ${m.role==='user'?'user':'ai'}">${m.content.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>
@@ -2005,7 +2011,7 @@ function renderSettingsContent() {
     <div class="settings-section">
       <div class="settings-section-title">Anthropic API Key</div>
       <div class="input-group" style="margin:0">
-        <input class="input" type="password" placeholder="sk-ant-..." value="${s.apiKey||''}" oninput="S.settings.apiKey=this.value;save()">
+        <input class="input" type="password" placeholder="sk-ant-..." value="${s.apiKey||''}" oninput="S.settings.apiKey=this.value.trim();save()">
       </div>
     </div>
 
