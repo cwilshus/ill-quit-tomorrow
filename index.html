@@ -541,16 +541,18 @@ function pickMultiImg(callback) {
 
 
 // ─── GIST BACKUP ─────────────────────────────────────────────
-async function autoBackup() {
+async function autoBackup(showResult=false) {
   if (!S.settings.githubToken || !S.settings.gistId) return;
   const payload = {...S, imgs: {}};
   try {
-    await fetch(`https://api.github.com/gists/${S.settings.gistId}`, {
+    const r = await fetch(`https://api.github.com/gists/${S.settings.gistId}`, {
       method: 'PATCH',
       headers: { 'Authorization': `token ${S.settings.githubToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ files: { 'iqt-backup.json': { content: JSON.stringify(payload) } } })
     });
-  } catch(e) {}
+    if (!r.ok) { const e = await r.json().catch(()=>({})); showToast('Backup failed: '+(e.message||r.status)); }
+    else if (showResult) showToast('Backup saved ✓');
+  } catch(e) { showToast('Backup error: '+e.message); }
 }
 
 async function createGist() {
@@ -2045,6 +2047,7 @@ function renderSettingsContent() {
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:4px">
+        <button class="btn btn-secondary btn-sm" onclick="autoBackup(true)">Backup now</button>
         <button class="btn btn-secondary btn-sm" onclick="restoreFromGist()">Restore from Gist</button>
         ${s.gistId ? `<span style="font-size:11px;color:var(--muted);align-self:center">Auto-syncing on every save</span>` : `<span style="font-size:11px;color:var(--muted);align-self:center">Enter token + create Gist to enable</span>`}
       </div>
