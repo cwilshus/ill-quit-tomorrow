@@ -713,6 +713,26 @@ function recentSummary() {
   return days.length ? `Recent 7 days — ${days.join(' | ')}` : 'No recent logs.';
 }
 
+async function testApiKey() {
+  const key = (S.settings.apiKey||'').replace(/\s/g,'');
+  const el = document.getElementById('apiTestResult');
+  if (!key) { if(el) el.textContent = '⚠️ No key saved'; return; }
+  if(el) el.innerHTML = '<span style="color:var(--muted)">Testing…</span>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:[{type:'text',text:'Hi'}]}]})
+    });
+    const data = await res.json();
+    if(el) el.innerHTML = res.ok
+      ? `<span style="color:var(--green)">✓ Key works! (${res.status})</span>`
+      : `<span style="color:var(--red)">✗ ${res.status}: ${data.error?.message||JSON.stringify(data)}</span>`;
+  } catch(e) {
+    if(el) el.innerHTML = `<span style="color:var(--red)">✗ Network error: ${e.message}</span>`;
+  }
+}
+
 // ─── AI TEXT FORMATTER ───────────────────────────────────────
 function fmtAI(t) {
   if (!t) return '';
@@ -2016,8 +2036,10 @@ function renderSettingsContent() {
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="btn btn-primary btn-sm" onclick="const v=document.getElementById('apiKeyInput').value.replace(/\s/g,'');S.settings.apiKey=v;save();renderSettingsContent();showToast(v?'API key saved ✓':'Key cleared')">Save Key</button>
           <button class="btn btn-secondary btn-sm" onclick="document.getElementById('apiKeyInput').value='';S.settings.apiKey='';save();renderSettingsContent();showToast('Key cleared')">Clear</button>
+          <button class="btn btn-secondary btn-sm" onclick="testApiKey()">Test</button>
         </div>
         ${s.apiKey ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">${s.apiKey.length} chars · ${s.apiKey.slice(0,12)}…${s.apiKey.slice(-4)}${s.apiKey.startsWith('sk-ant-')?'':' ⚠️ should start with sk-ant-'}</div>` : `<div style="font-size:11px;color:var(--red);margin-top:6px">No key saved</div>`}
+        <div id="apiTestResult" style="font-size:11px;margin-top:6px;word-break:break-all"></div>
       </div>
     </div>
 
