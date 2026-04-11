@@ -552,9 +552,19 @@ async function autoBackup(showResult=false) {
       headers: { 'Authorization': `token ${S.settings.githubToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ files: { 'iqt-backup.json': { content: JSON.stringify(payload) } } })
     });
-    if (!r.ok) { const e = await r.json().catch(()=>({})); showToast('Backup failed: '+(e.message||r.status)); }
-    else if (showResult) showToast('Backup saved ✓');
-  } catch(e) { showToast('Backup error: '+e.message); }
+    if (!r.ok) {
+      const e = await r.json().catch(()=>({}));
+      const msg = 'Backup failed: '+(e.message||r.status);
+      S.settings.lastBackupStatus = '✗ '+msg;
+      showToast(msg, 6000);
+    } else {
+      S.settings.lastBackupStatus = '✓ '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      if (showResult) showToast('Backup saved ✓');
+    }
+  } catch(e) {
+    S.settings.lastBackupStatus = '✗ '+e.message;
+    showToast('Backup error: '+e.message, 6000);
+  }
 }
 
 async function createGist() {
@@ -2119,6 +2129,7 @@ function renderSettingsContent() {
         <button class="btn btn-secondary btn-sm" onclick="restoreFromGist()">Restore from Gist</button>
         ${s.gistId ? `<span style="font-size:11px;color:var(--muted);align-self:center">Auto-syncing on every save</span>` : `<span style="font-size:11px;color:var(--muted);align-self:center">Enter token + create Gist to enable</span>`}
       </div>
+      ${s.lastBackupStatus ? `<div style="font-size:11px;margin-top:6px;color:${s.lastBackupStatus.startsWith('✓')?'var(--green)':'var(--red)'}">Last backup: ${s.lastBackupStatus}</div>` : ''}
     </div>
 
     <div class="settings-section">
