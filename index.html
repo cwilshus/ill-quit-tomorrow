@@ -1249,15 +1249,14 @@ async function analyzeSleepImg(d) {
     const text = await aiText(`${athleteCtx()}
 You are the world's best hybrid fitness coach. Analyze this Garmin sleep screenshot for ${d} (total sleep: ${sleepStr}).
 
-Structure your response with these sections:
+Write in short prose paragraphs. No tables, no dashes, no dividers, no bullet points. Use bold headers only.
 
-**Sleep Architecture** — Comment on deep/light/REM/awake ratios relative to what a Hyrox athlete needs.
-**Recovery Quality** — Rate the recovery value (1–10) and explain why.
-**HRV & Heart Rate** — Interpret overnight HRV and resting HR. Flag any deviations.
-**Key Observations** — Body battery, respiration, SpO2, restless moments — any red flags or positives.
-**Training Guidance** — Direct recommendation for how today's training should be adjusted based on this sleep.
+**Sleep Architecture** — Deep/light/REM/awake ratios vs what a Hyrox athlete needs.
+**Recovery Quality** — Rate 1–10 and explain in 2 sentences.
+**HRV & Heart Rate** — Overnight HRV and resting HR, any flags.
+**Training Guidance** — One direct sentence on how to adjust today's training.
 
-Be specific, data-driven, and direct. No generic advice.`, [imgData]);
+Be specific and data-driven. Keep each section to 2–3 sentences max.`, [imgData]);
     dayLog(d).morning.sleepAiSummary = text;
     save(); renderHealthContent(); showToast('Analysis complete ✓');
   } catch(e) { showToast('Error: '+e.message); }
@@ -1798,12 +1797,16 @@ function renderProgressContent() {
   }
 
   const paceRaw = [], weightRaw = [], milesRaw = [];
+  let totalRuns = 0;
   const sortedDates = Object.keys(S.logs).sort();
 
   sortedDates.forEach(d=>{
     const log = S.logs[d];
     (log?.garmin?.sessions||[]).forEach(s=>{
+      const dist = parseFloat(s.manual?.dist)||0;
+      if (dist) milesRaw.push({d, y:dist}); // all sessions including warmups
       if (isWarmup(s.tag)) return;
+      if (s.sessionType === 'Monostructural') totalRuns++;
       if (s.manual?.pace) {
         const parts = s.manual.pace.split(':');
         if (parts.length===2) {
@@ -1811,8 +1814,6 @@ function renderProgressContent() {
           if (!isNaN(mins)) paceRaw.push({d, y:mins});
         }
       }
-      const dist = parseFloat(s.manual?.dist)||0;
-      if (dist) milesRaw.push({d, y:dist});
     });
     const w = log?.morning?.weight;
     if (w) weightRaw.push({d, y:w});
@@ -1840,7 +1841,6 @@ function renderProgressContent() {
   S.settings.shoes.forEach(shoe=>{ shoeMiles[shoe.id] = shoe.extraMiles || 0; });
   sortedDates.forEach(d=>{
     (S.logs[d]?.garmin?.sessions||[]).forEach(s=>{
-      if (isWarmup(s.tag)) return;
       const dist = parseFloat(s.manual?.dist)||0;
       if (!dist || !s.shoeId) return;
       if (shoeMiles.hasOwnProperty(s.shoeId)) shoeMiles[s.shoeId] += dist;
@@ -1860,15 +1860,20 @@ function renderProgressContent() {
       <button class="view-toggle-btn ${view==='monthly'?'active':''}" onclick="S.progressView='monthly';renderProgressContent()">Monthly</button>
     </div>
 
-    <div class="card" style="margin:12px 16px;display:flex;gap:24px;flex-wrap:wrap">
+    <div class="card" style="margin:12px 16px;display:flex;gap:20px;flex-wrap:wrap">
       <div>
         <div style="font-size:28px;font-weight:700;color:var(--text);line-height:1">${totalSessions}</div>
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Sessions logged</div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Sessions</div>
+      </div>
+      <div style="width:1px;background:var(--border)"></div>
+      <div>
+        <div style="font-size:28px;font-weight:700;color:var(--text);line-height:1">${totalRuns}</div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Runs</div>
       </div>
       <div style="width:1px;background:var(--border)"></div>
       <div>
         <div style="font-size:28px;font-weight:700;color:var(--accent);line-height:1">${totalMiles.toFixed(1)}</div>
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Total miles</div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Miles</div>
       </div>
     </div>
 
