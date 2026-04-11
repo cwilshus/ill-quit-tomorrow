@@ -544,7 +544,8 @@ function pickMultiImg(callback) {
 // ─── GIST BACKUP ─────────────────────────────────────────────
 async function autoBackup(showResult=false) {
   if (!S.settings.githubToken || !S.settings.gistId) return;
-  const payload = {...S, imgs: {}};
+  const {apiKey, githubToken, ...safeSettings} = S.settings;
+  const payload = {...S, imgs: {}, settings: safeSettings};
   try {
     const r = await fetch(`https://api.github.com/gists/${S.settings.gistId}`, {
       method: 'PATCH',
@@ -583,6 +584,12 @@ async function restoreFromGist() {
     const content = data.files?.['iqt-backup.json']?.content;
     if (!content || content === '{}') { showToast('No backup found in Gist'); return; }
     const saved = JSON.parse(content);
+    // Preserve sensitive settings that are never written to the Gist
+    if (saved.settings) {
+      saved.settings.apiKey = S.settings.apiKey;
+      saved.settings.githubToken = S.settings.githubToken;
+      saved.settings.gistId = S.settings.gistId;
+    }
     S = {...S, ...saved};
     save(); render(); showToast('Restored from Gist ✓');
   } catch(e) { showToast('Restore failed: '+e.message); }
