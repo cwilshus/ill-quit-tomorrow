@@ -1999,7 +1999,8 @@ async function sendChat() {
     }
     S.chatHistory.push({role:'assistant',content:replyContent});
   } catch(e) {
-    S.chatHistory.push({role:'assistant',content:'Error: '+e.message});
+    S.chatHistory.pop(); // remove the user message so they can retry
+    showToast('Coach error: '+e.message, 4000);
   }
   save(); renderPlanContent();
 }
