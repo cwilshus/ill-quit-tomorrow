@@ -2162,6 +2162,79 @@ function deletePlanImg(i) {
   save(); renderPlanContent();
 }
 
+// ─── CHAT → TODAY INTEGRATION ────────────────────────────────
+async function extractLogData(userMsg, santaReply, imgDataArr, date) {
+  const key = (S.settings.apiKey||'').trim();
+  if (!key) return;
+  const prompt = `Look at this conversation and extract any concrete training or health data mentioned. Return ONLY valid JSON.
+
+User: "${userMsg}"
+Coach: "${santaReply}"
+
+Return this exact structure (null for anything not clearly stated):
+{
+  "session": {
+    "sessionType": "Monostructural" | "GPP" | "Strength" | "Bike" | null,
+    "tag": "label e.g. Easy Run, Threshold, Long Run, or null",
+    "manual": { "dist": miles or null, "pace": "MM:SS/mi or null", "hr": bpm or null, "cadence": spm or null, "rpe": 1-10 or null },
+    "notes": "brief note or null"
+  },
+  "health": {
+    "hrv": "green"|"yellow"|"red"|null, "recovery": 1-5 or null, "sleepScore": number or null,
+    "sleepH": hours or null, "sleepM": minutes or null, "restingHr": bpm or null, "weight": lbs or null
+  }
+}
+Return exactly {} if this is a general question with no specific training or health data.`;
+  try {
+    const content = [];
+    for (const img of imgDataArr) {
+      if (img) content.push({type:'image',source:{type:'base64',media_type:img.split(';')[0].split(':')[1],data:img.split(',')[1]}});
+    }
+    content.push({type:'text',text:prompt});
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:MODEL,max_tokens:350,messages:[{role:'user',content}]})
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const extracted = JSON.parse(data.content?.map(c=>c.text||'').join('').trim().replace(/```json\n?|```/g,'').trim());
+    if (!extracted || !Object.keys(extracted).length) return;
+
+    const log = dayLog(date);
+    const added = [];
+
+    if (extracted.session && (extracted.session.sessionType || extracted.session.tag || extracted.session.manual?.dist)) {
+      const s = extracted.session;
+      log.garmin.sessions.push({
+        sessionType: s.sessionType||'Monostructural', tag: s.tag||'', runType:'',
+        manual: { dist:s.manual?.dist||null, pace:s.manual?.pace||null, hr:s.manual?.hr||null, cadence:s.manual?.cadence||null, rpe:s.manual?.rpe||null },
+        notes: s.notes||'', intervalSets:[], shoeId:null
+      });
+      added.push([s.tag||s.sessionType, s.manual?.dist?s.manual.dist+' mi':'', s.manual?.pace?'@ '+s.manual.pace+'/mi':''].filter(Boolean).join(' '));
+    }
+
+    if (extracted.health) {
+      const h = extracted.health;
+      const hadAny = h.hrv||h.recovery||h.sleepScore||h.sleepH!=null||h.restingHr||h.weight;
+      if (h.hrv) log.morning.hrv = h.hrv;
+      if (h.recovery) log.morning.recovery = h.recovery;
+      if (h.sleepScore) log.morning.sleepScore = h.sleepScore;
+      if (h.sleepH != null) log.morning.sleepH = h.sleepH;
+      if (h.sleepM != null) log.morning.sleepM = h.sleepM;
+      if (h.restingHr) log.morning.restingHr = h.restingHr;
+      if (h.weight) log.morning.weight = h.weight;
+      if (hadAny) added.push('readiness updated');
+    }
+
+    if (added.length) {
+      save();
+      showToast('Saved to Today: ' + added.join(', '));
+      if (S.tab==='today') renderTodayContent();
+    }
+  } catch(e) { /* silent fail — extraction is best-effort */ }
+}
+
 function autoResizeChat(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 160) + 'px';
@@ -2228,6 +2301,9 @@ async function sendChat() {
       replyContent = await chatCall(msg);
     }
     S.chatHistory.push({role:'assistant',content:replyContent});
+    // Fire-and-forget: extract any session or health data from this exchange
+    const imgDataArr = S.planImgs.slice(0,3).map(k=>S.imgs[k]).filter(Boolean);
+    extractLogData(msg, replyContent, imgDataArr, today());
   } catch(e) {
     S.chatHistory.pop(); // remove the user message so they can retry
     showToast('Coach error: '+e.message, 4000);
