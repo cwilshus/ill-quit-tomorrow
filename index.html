@@ -420,7 +420,8 @@ let S = {
   imgs: {},
   summaries: {},
   trainingPlan: [],
-  planWelcome: ''
+  planWelcome: '',
+  coachNotes: []
 };
 
 // ─── WORKOUT BUILDER STATE ────────────────────────────────────
@@ -609,6 +610,31 @@ async function restoreFromGist() {
   } catch(e) { showToast('Restore failed: '+e.message); }
 }
 
+// ─── COACH MEMORY ─────────────────────────────────────────────
+async function saveCoachNote(note) {
+  if (!note?.trim()) return;
+  const entry = {note: note.trim(), date: today()};
+  if (!S.coachNotes) S.coachNotes = [];
+  if (S.coachNotes.some(n => n.note.toLowerCase() === entry.note.toLowerCase())) return;
+  S.coachNotes.push(entry);
+  save();
+  // Write dedicated coach-notes.json to Gist alongside the regular backup
+  if (S.settings.githubToken && S.settings.gistId) {
+    try {
+      await fetch(`https://api.github.com/gists/${S.settings.gistId}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `token ${S.settings.githubToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: { 'coach-notes.json': { content: JSON.stringify(S.coachNotes) } } })
+      });
+    } catch(e) {}
+  }
+}
+
+function deleteCoachNote(idx) {
+  S.coachNotes.splice(idx, 1);
+  save(); renderSettingsContent();
+}
+
 // ─── TIERED AI SUMMARIES ─────────────────────────────────────
 async function ensureDailySummary(d) {
   const key = 'daily-'+d;
@@ -789,8 +815,12 @@ RULES:
 - Never use tables, horizontal dividers (---), or pipe characters in responses.
 - Write in prose. Use bold headers only when genuinely needed for structure.
 - Do not use exclamation points for every sentence.
+- To save a persistent observation about this athlete, end your response with [REMEMBER: your observation]. Use this sparingly — only for insights that would genuinely change how you coach this person.
 
-${athleteCtx()}`;
+${(S.coachNotes||[]).length ? `COACH MEMORY — your saved observations about this athlete:
+${(S.coachNotes).map((n,i)=>`${i+1}. [${n.date}] ${n.note}`).join('\n')}
+
+` : ''}${athleteCtx()}`;
 }
 
 function recentSummary() {
@@ -2598,6 +2628,12 @@ async function sendChat() {
     } else {
       replyContent = await chatCall(msg);
     }
+    // Extract and strip [REMEMBER: ...] before storing
+    const rememberMatch = replyContent.match(/\[REMEMBER:\s*(.+?)\]/i);
+    if (rememberMatch) {
+      saveCoachNote(rememberMatch[1]); // fire-and-forget
+      replyContent = replyContent.replace(/\s*\[REMEMBER:[^\]]*\]/gi, '').trim();
+    }
     S.chatHistory.push({role:'assistant',content:replyContent});
     // Fire-and-forget: extract session/health data and detect plan changes
     const imgDataArr = S.planImgs.slice(0,3).map(k=>S.imgs[k]).filter(Boolean);
@@ -2671,6 +2707,22 @@ function renderSettingsContent() {
         ${s.gistId ? `<span style="font-size:11px;color:var(--muted);align-self:center">Auto-syncing on every save</span>` : `<span style="font-size:11px;color:var(--muted);align-self:center">Enter token + create Gist to enable</span>`}
       </div>
       ${s.lastBackupStatus ? `<div style="font-size:11px;margin-top:6px;color:${s.lastBackupStatus.startsWith('✓')?'var(--green)':'var(--red)'}">Last backup: ${s.lastBackupStatus}</div>` : ''}
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Coach Memory</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Santa saves observations here automatically. She reads these at the start of every conversation.</div>
+      ${(S.coachNotes||[]).length ? `
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+        ${(S.coachNotes).map((n,i)=>`
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:var(--surface-raised);border-radius:8px;border:1px solid var(--border)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;line-height:1.5">${n.note}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${n.date}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:12px;flex-shrink:0;color:var(--muted)" onclick="deleteCoachNote(${i})">✕</button>
+        </div>`).join('')}
+      </div>` : `<div style="font-size:13px;color:var(--muted);margin-bottom:10px">No notes yet. Santa will save observations as you chat.</div>`}
     </div>
 
     <div class="settings-section">
