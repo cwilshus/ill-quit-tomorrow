@@ -785,7 +785,7 @@ PERSONALITY: Warm but has opinions. Dry humor when appropriate, not cheesy. Conf
 
 RULES:
 - Respond concisely by default; expand only when asked.
-- Before modifying the training plan, confirm alignment first. Confirm again when changes are implemented.
+- Before modifying the training plan, propose the specific change first (include the exact date and new session description), then wait for confirmation. After the athlete confirms, reply with "Done — [date] updated to: [new session]." so the app can detect and apply the change automatically.
 - Never use tables, horizontal dividers (---), or pipe characters in responses.
 - Write in prose. Use bold headers only when genuinely needed for structure.
 - Do not use exclamation points for every sentence.
@@ -2371,6 +2371,55 @@ Return exactly {} if this is a general question with no specific training or hea
   } catch(e) { /* silent fail — extraction is best-effort */ }
 }
 
+// ─── CHAT → PLAN INTEGRATION ──────────────────────────────────
+async function extractPlanChange(chatHistory) {
+  const key = (S.settings.apiKey||'').trim();
+  if (!key || !S.trainingPlan?.length) return;
+  const recent = chatHistory.slice(-6);
+  if (recent.length < 2) return;
+  // Quick pre-check: only run expensive AI call if last user msg sounds like a confirmation
+  const lastUser = recent.filter(m => m.role === 'user').slice(-1)[0];
+  if (!lastUser) return;
+  const confirmWords = ['yes','yeah','do it','sounds good','perfect','go ahead','update','make that change','change it','let\'s do it','sure','ok','okay'];
+  const isConfirmation = confirmWords.some(w => lastUser.content.toLowerCase().includes(w));
+  if (!isConfirmation) return;
+  const convo = recent.map(m => `${m.role==='user'?'Athlete':'Coach Santa'}: ${m.content}`).join('\n\n');
+  const futureWeeks = (S.trainingPlan||[]).filter(w => w.weekStart >= weekStart(today())).slice(0, 4);
+  const prompt = `Analyze this coaching conversation. Did the coach propose a specific training plan change AND did the athlete confirm it?
+
+CONVERSATION:
+${convo}
+
+CURRENT UPCOMING PLAN:
+${JSON.stringify(futureWeeks)}
+
+If a specific session was proposed by the coach and confirmed by the athlete, return JSON:
+{"change": true, "day": "YYYY-MM-DD", "session": "exact new session description"}
+
+If no confirmed specific plan change, return: {"change": false}
+
+Only return change:true if BOTH conditions are met: coach proposed something specific AND athlete confirmed. Return ONLY valid JSON.`;
+  try {
+    const result = await aiJSON(prompt);
+    if (!result?.change || !result.day || !result.session) return;
+    const wk = weekStart(result.day);
+    const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(result.day+'T12:00:00').getDay()];
+    const weekIdx = (S.trainingPlan||[]).findIndex(w => w.weekStart === wk);
+    if (weekIdx < 0) {
+      const newWeek = {weekStart: wk, sessions: {}};
+      newWeek.sessions[dow] = result.session;
+      S.trainingPlan.push(newWeek);
+      S.trainingPlan.sort((a,b) => a.weekStart < b.weekStart ? -1 : 1);
+    } else {
+      S.trainingPlan[weekIdx].sessions[dow] = result.session;
+    }
+    save();
+    showToast(`Plan updated: ${fmtDay(result.day)} ✓`);
+    if (S.tab==='plan') renderPlanContent();
+    if (S.tab==='today') renderTodayContent();
+  } catch(e) { /* silent fail */ }
+}
+
 function autoResizeChat(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 160) + 'px';
@@ -2437,9 +2486,10 @@ async function sendChat() {
       replyContent = await chatCall(msg);
     }
     S.chatHistory.push({role:'assistant',content:replyContent});
-    // Fire-and-forget: extract any session or health data from this exchange
+    // Fire-and-forget: extract session/health data and detect plan changes
     const imgDataArr = S.planImgs.slice(0,3).map(k=>S.imgs[k]).filter(Boolean);
     extractLogData(msg, replyContent, imgDataArr, today());
+    extractPlanChange(S.chatHistory.slice(-6));
   } catch(e) {
     S.chatHistory.pop(); // remove the user message so they can retry
     showToast('Coach error: '+e.message, 4000);
