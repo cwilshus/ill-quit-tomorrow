@@ -918,6 +918,46 @@ async function chatCall(userMessage, imgData=null) {
   return data.content?.map(c=>c.text||'').join('').trim();
 }
 
+// ─── PROACTIVE COACHING TRIGGERS ──────────────────────────────
+function checkProactiveTrigger(d) {
+  if (!S.settings.apiKey) return null;
+  const dow = dayOfWeek(d);
+  const keyDays = [0, 3, 5, 6]; // Sun=Compromised, Wed=Threshold, Fri=Key Run, Sat=Long Run
+  const daysToRace = daysUntil(S.settings.raceDate);
+
+  if (daysToRace >= 0 && daysToRace <= 7) return {type:'race-week', daysToRace};
+  if (dow === 0) return {type:'weekly-checkin'};
+  const yesterday = addDays(d, -1);
+  if (S.logs[d]?.morning?.hrv === 'red' && S.logs[yesterday]?.morning?.hrv === 'red') return {type:'hrv-alert'};
+  if (keyDays.includes(dow) && hasGarminSessions(d)) return {type:'post-session'};
+  if (keyDays.includes(dow) && !hasGarminSessions(d)) return {type:'pre-session'};
+  return null;
+}
+
+async function generateProactive(d, trigger) {
+  if (S.summaries[d+'-proactive'] === 'loading') return;
+  S.summaries[d+'-proactive'] = 'loading';
+  if (S.tab==='today') renderTodayContent();
+  const contexts = {
+    'race-week': `Race is in ${trigger.daysToRace} days. Give a focused race-week check-in — what to prioritize today, what to dial back. Be specific.`,
+    'weekly-checkin': `It's Sunday. Give a brief weekly review and set the tone for next week based on recent training.`,
+    'hrv-alert': `HRV has been red 2+ consecutive days. Address this directly — what should the athlete change or skip today?`,
+    'post-session': `A key session was just logged for today. Give brief targeted feedback on what was logged.`,
+    'pre-session': `Today is a key training day (${SCHEDULE[dayOfWeek(d)]}) and the session hasn't been logged yet. Give a focused pre-session coaching note.`,
+  };
+  const prompt = `${athleteCtx()}
+
+Today is ${fmtDay(d)} ${d}. ${contexts[trigger.type]||'Give a brief coaching note.'}
+
+Keep it to 2–3 sentences max. Direct and specific. No exclamation points. Do not use tables or dividers.`;
+  try {
+    const text = await aiText(prompt);
+    S.summaries[d+'-proactive'] = text;
+    save();
+    if (S.tab==='today' && S.selDate===d) renderTodayContent();
+  } catch(e) { S.summaries[d+'-proactive'] = null; }
+}
+
 async function getAdvice(date) {
   if (S.summaries[date+'-advice']) return;
   S.summaries[date+'-advice'] = 'loading';
@@ -1056,6 +1096,11 @@ function renderTodayContent() {
   if (hasMorning(S.selDate) && !S.summaries[S.selDate+'-advice'] && S.settings.apiKey) {
     getAdvice(S.selDate);
   }
+  // Proactive coaching trigger — today only, not dismissed
+  if (S.selDate === todayStr && !S.summaries[todayStr+'-proactive'] && !S.summaries[todayStr+'-proactive-dismissed']) {
+    const trigger = checkProactiveTrigger(todayStr);
+    if (trigger) generateProactive(todayStr, trigger);
+  }
 }
 
 function renderWeekView(days) {
@@ -1083,6 +1128,23 @@ function renderDayView(d) {
   const log = S.logs[d];
   const m = log?.morning;
   const isToday = d === todayStr;
+
+  // ── PROACTIVE BANNER (today only) ─────────────────────────
+  if (isToday && !S.summaries[d+'-proactive-dismissed']) {
+    const pMsg = S.summaries[d+'-proactive'];
+    if (pMsg === 'loading') {
+      html += `<div class="card card-accent" style="margin:0 16px 10px"><div class="advice-loading"><div class="spinner"></div> Coach Santa is checking in…</div></div>`;
+    } else if (pMsg) {
+      html += `<div class="card card-accent" style="margin:0 16px 10px;padding:12px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--accent)">COACH SANTA</div>
+          <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:16px;line-height:1;opacity:0.5;margin-right:-4px" onclick="S.summaries['${d}-proactive-dismissed']=true;save();renderTodayContent()">×</button>
+        </div>
+        <div style="font-size:13px;line-height:1.6">${fmtAI(pMsg)}</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:11px;padding:3px 0" onclick="switchTab('plan')">Chat with Santa →</button>
+      </div>`;
+    }
+  }
 
   // ── TODAY'S FOCUS ──────────────────────────────────────────
   const plan = getPlanForDate(d);
