@@ -935,6 +935,9 @@ You are Coach Santa Claude, the world's best hybrid fitness coach. Give a concis
 }
 
 // ─── TODAY TAB ────────────────────────────────────────────────
+const _todayExp = new Set();
+function todayToggle(key) { _todayExp.has(key)?_todayExp.delete(key):_todayExp.add(key); renderTodayContent(); }
+
 function renderTodayContent() {
   const el = document.getElementById('tab-today');
   const days = getWeekDays(today(), S.weekOffset);
@@ -996,48 +999,77 @@ function renderDayView(d) {
   const m = log?.morning;
   const isToday = d === todayStr;
 
-  // Sunday weigh-in prompt
-  if (isSunday(d) && (!m || !m.weight)) {
-    html += `<div class="weigh-in-banner">
-      <div class="weigh-in-icon" style="color:var(--accent)"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 10h2l2-3 2 6 2-3h2"/></svg></div>
-      <div class="weigh-in-text">
-        <div class="weigh-in-title">Sunday Weigh-In</div>
-        <div class="weigh-in-sub">Log your weight in Health → Morning Check-In</div>
-      </div>
-      <button class="btn btn-secondary btn-sm" onclick="switchTab('health')">Log →</button>
-    </div>`;
-  }
+  // ── TODAY'S FOCUS ──────────────────────────────────────────
+  const plan = getPlanForDate(d);
+  const scheduled = SCHEDULE[dayOfWeek(d)] || 'Rest';
+  const focusTitle = plan || scheduled;
 
-  // Readiness banner
-  if (m && m.hrv) {
-    const color = m.hrv==='green'?'green':m.hrv==='yellow'?'yellow':'red';
-    const label = m.hrv==='green'?'Good readiness':m.hrv==='yellow'?'Moderate readiness':'Low readiness';
-    const sub = m.hrv==='green'?'HRV green':m.hrv==='yellow'?'HRV orange':'HRV red';
-    html += `<div class="banner banner-${color}" style="justify-content:space-between">
-      <span style="font-weight:600">${label}</span>
-      <span style="font-size:12px;opacity:.8">${sub}${m.recovery?` · ${m.recovery}/5`:''}</span>
-    </div>`;
-  } else if (isToday) {
-    html += `<div class="banner banner-blue" style="cursor:pointer;justify-content:space-between" onclick="switchTab('health')">
-      <span style="font-size:13px">Log morning check-in to see readiness</span>
-      <span style="font-size:12px;opacity:.7">Health →</span>
-    </div>`;
-  }
-
-  // AI Advice
+  let adviceContent = '';
   if (!S.settings.apiKey) {
-    html += `<div class="card card-accent"><div class="advice-header">${sparkIcon()} Coach Santa Claude</div><div class="advice-body text-muted">Add your API key in Settings to get daily coaching advice.</div></div>`;
-  } else if (!hasMorning(d)) {
-    html += `<div class="card card-accent"><div class="advice-header">${sparkIcon()} Coach Santa Claude</div><div class="advice-body text-muted">Complete your morning check-in in Health to get today's advice.</div></div>`;
+    adviceContent = `<div class="text-sm text-muted" style="margin-top:6px">Add your API key in Settings to unlock daily coaching.</div>`;
+  } else if (!hasMorning(d) && isToday) {
+    adviceContent = `<div class="text-sm text-muted" style="margin-top:6px;cursor:pointer" onclick="switchTab('health')">Complete morning check-in to get today's focus →</div>`;
   } else if (S.summaries[d+'-advice'] === 'loading') {
-    html += `<div class="advice-card"><div class="advice-header">${sparkIcon()} Coach Santa Claude</div><div class="advice-loading"><div class="spinner"></div> Analyzing your data...</div></div>`;
+    adviceContent = `<div class="advice-loading" style="margin-top:8px"><div class="spinner"></div> Generating focus…</div>`;
   } else if (S.summaries[d+'-advice']) {
-    html += `<div class="advice-card"><div class="advice-header">${sparkIcon()} Coach Santa Claude — ${fmtDay(d)} Advice</div><div class="advice-body">${fmtAI(S.summaries[d+'-advice'])}</div></div>`;
+    adviceContent = `<div style="font-size:13px;line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">${fmtAI(S.summaries[d+'-advice'])}</div>`;
+    if (isToday) adviceContent += `<button class="btn btn-ghost btn-sm" style="margin-top:2px;padding:4px 0;font-size:12px" onclick="delete S.summaries['${d}-advice'];save();renderTodayContent()">${sparkIcon(11)} Refresh</button>`;
   } else if (S.summaries[d+'-advice'] === null) {
-    html += `<div class="advice-card"><div class="advice-header">${sparkIcon()} Coach Santa Claude</div><div class="advice-body text-muted" style="display:flex;align-items:center;gap:8px">Couldn't generate advice. Check API key in Settings. <button class="btn btn-ghost btn-sm" onclick="delete S.summaries['${d}-advice'];renderTodayContent()">Retry</button></div></div>`;
+    adviceContent = `<div class="text-sm text-muted" style="margin-top:6px">Couldn't generate focus. <button class="btn btn-ghost btn-sm" onclick="delete S.summaries['${d}-advice'];renderTodayContent()">Retry</button></div>`;
   }
 
-  // Weekly coach summary banner (today only)
+  html += `
+    <div class="card card-accent">
+      <div class="card-header" style="margin-bottom:4px">
+        <span class="card-title" style="display:flex;align-items:center;gap:6px">${sparkIcon(12)} Today's Focus</span>
+        <span style="font-size:11px;color:var(--muted)">${fmtDate(d)}</span>
+      </div>
+      <div style="font-size:15px;font-weight:700;color:var(--text)">${focusTitle}</div>
+      ${adviceContent}
+      ${!hasGarminSessions(d)&&!hasSession(d)&&isToday?`<button class="btn btn-primary btn-sm" style="margin-top:10px;width:100%" onclick="switchTab('log')">+ Log Session</button>`:''}
+    </div>`;
+
+  // ── READINESS ──────────────────────────────────────────────
+  const expR = _todayExp.has('readiness');
+  if (m && (m.hrv || m.recovery || m.sleepScore || m.sleepH != null)) {
+    const hrvColor = m.hrv==='green'?'var(--green)':m.hrv==='yellow'?'var(--yellow)':m.hrv==='red'?'var(--red)':'var(--muted)';
+    const dots = [];
+    if (m.hrv) dots.push(`<div style="display:flex;align-items:center;gap:5px"><div class="hrv-dot hrv-${m.hrv}" style="width:11px;height:11px"></div><span style="font-size:14px;font-weight:600;color:${hrvColor}">${m.hrv[0].toUpperCase()+m.hrv.slice(1)}</span><span style="font-size:11px;color:var(--muted)">HRV</span></div>`);
+    if (m.recovery) dots.push(`<span style="font-size:14px;font-weight:600">${m.recovery}/5</span><span style="font-size:11px;color:var(--muted);margin-left:3px">Recovery</span>`);
+    if (m.sleepScore) dots.push(`<span style="font-size:14px;font-weight:600">${m.sleepScore}</span><span style="font-size:11px;color:var(--muted);margin-left:3px">Sleep score</span>`);
+    if (m.sleepH != null) dots.push(`<span style="font-size:14px;font-weight:600">${m.sleepH}h${m.sleepM?m.sleepM+'m':''}</span><span style="font-size:11px;color:var(--muted);margin-left:3px">Sleep</span>`);
+
+    let expanded = '';
+    if (expR) {
+      if (m.restingHr) expanded += `<div style="font-size:13px;color:var(--muted2);margin-top:8px">Resting HR: <strong style="color:var(--text)">${m.restingHr} bpm</strong></div>`;
+      if (m.sleepQuality) expanded += `<div style="font-size:13px;color:var(--muted2)">Sleep quality: <strong style="color:var(--text)">${m.sleepQuality}/5</strong></div>`;
+      if (m.sleepAiSummary) {
+        expanded += `<div style="margin-top:10px;padding:10px;background:var(--cream-dim);border:1px solid var(--cream-border);border-radius:8px;font-size:13px;line-height:1.6">${fmtAI(m.sleepAiSummary)}</div>`;
+      } else if (m.sleepImg && S.settings.apiKey) {
+        expanded += `<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="event.stopPropagation();analyzeSleep('${d}')">Analyze sleep</button>`;
+      }
+    }
+
+    html += `
+      <div class="card" style="cursor:pointer" onclick="todayToggle('readiness')">
+        <div class="card-header" style="margin-bottom:${expR?'10':'0'}px">
+          <span class="card-title">Readiness</span>
+          <span style="font-size:18px;color:var(--muted);line-height:1">${expR?'⌃':'⌄'}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">${dots.map(d=>`<div style="display:flex;align-items:center">${d}</div>`).join('')}</div>
+        ${expanded}
+      </div>`;
+  } else if (isToday) {
+    html += `
+      <div class="card" style="cursor:pointer" onclick="switchTab('health')">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;color:var(--muted2)">Log morning check-in</span>
+          <span style="font-size:12px;color:var(--accent)">Health →</span>
+        </div>
+      </div>`;
+  }
+
+  // ── WEEKLY SUMMARY BANNER ──────────────────────────────────
   if (isToday && S.settings.apiKey) {
     const wkKey = 'coach-summary-'+weekStart(d);
     const wkSum = S.summaries[wkKey];
@@ -1047,67 +1079,78 @@ function renderDayView(d) {
         <span style="font-size:12px;opacity:.7">Coach →</span>
       </div>`;
     } else if (wkSum === 'loading') {
-      html += `<div class="banner banner-blue" style="justify-content:flex-start;gap:10px">
-        <div class="spinner"></div>
-        <span style="font-size:13px">Generating weekly summary…</span>
-      </div>`;
+      html += `<div class="banner banner-blue" style="justify-content:flex-start;gap:10px"><div class="spinner"></div><span style="font-size:13px">Generating weekly summary…</span></div>`;
     }
   }
 
-  // Scheduled workout type
-  const dow = dayOfWeek(d);
-  const scheduled = SCHEDULE[dow] || 'Rest';
-  html += `<div class="card">
-    <div class="card-header">
-      <span class="card-title">Scheduled</span>
-      <span class="text-accent text-sm font-bold">${fmtDate(d)}</span>
-    </div>
-    <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">${scheduled}</div>
-    ${!hasSession(d)&&isToday?`<button class="btn btn-primary btn-sm w-full mt-2" onclick="switchTab('log')">+ Log Session</button>`:''}
-  </div>`;
+  // ── SESSIONS (expandable) ──────────────────────────────────
+  if (hasGarminSessions(d)) {
+    log.garmin.sessions.forEach((s, i) => {
+      const key = `sg${i}`;
+      const exp = _todayExp.has(key);
+      const tag = s.tag || s.sessionType || `Session ${i+1}`;
+      const parts = [s.manual?.dist?`${s.manual.dist} mi`:'', s.manual?.pace?`${s.manual.pace}/mi`:''].filter(Boolean);
+      const meta = parts.join(' · ');
+      let details = '';
+      if (exp) {
+        if (s.runType) details += `<div class="text-sm text-muted">Type: ${s.runType}</div>`;
+        if (s.manual?.hr) details += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
+        if (s.manual?.cadence) details += `<div class="text-sm text-muted">Cadence: ${s.manual.cadence} spm</div>`;
+        if (s.manual?.rpe) details += `<div class="text-sm text-muted">RPE: ${s.manual.rpe}/10</div>`;
+        const shoe = S.settings.shoes?.find(sh=>sh.id===s.shoeId);
+        if (shoe) details += `<div class="text-sm text-muted">Shoes: ${shoe.name}</div>`;
+        if (s.notes) details += `<div style="margin-top:6px;font-size:13px;color:var(--text);font-style:italic">${s.notes}</div>`;
+        if (s.intervalSets?.length) details += `<div class="text-sm text-muted" style="margin-top:4px">Intervals: ${s.intervalSets.map(iv=>iv.pace+'/mi').join(', ')}</div>`;
+      }
+      html += `
+        <div class="card" style="cursor:pointer" onclick="todayToggle('${key}')">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <span style="font-size:14px;font-weight:600;color:var(--text)">${tag}</span>
+              ${meta?`<span style="font-size:12px;color:var(--muted);margin-left:8px">${meta}</span>`:''}
+            </div>
+            <span style="font-size:18px;color:var(--muted);line-height:1">${exp?'⌃':'⌄'}</span>
+          </div>
+          ${details?`<div style="margin-top:8px;display:flex;flex-direction:column;gap:3px">${details}</div>`:''}
+        </div>`;
+    });
+    if (log.garmin.soreness?.length) {
+      html += `<div style="padding:0 16px;font-size:12px;color:var(--muted2);margin-top:-6px;margin-bottom:8px">Soreness: ${log.garmin.soreness.join(', ')}</div>`;
+    }
+  }
 
-  // Session summary
   if (hasSession(d)) {
     const session = log.session;
-    html += `<div class="card">
-      <div class="card-header"><span class="card-title">Session</span><button class="btn btn-ghost btn-sm" onclick="S.logSubTab='session';switchTab('log')">Edit</button></div>
-      ${session.soreness?.length?`<div class="text-sm text-muted mb-2">Soreness: ${session.soreness.join(', ')}</div>`:''}
-      ${session.workouts.map(w=>{
-        const wShoe = S.settings.shoes.find(s=>s.id===w.shoeId);
-        return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
-          <span class="workout-type-badge badge-${TYPE_BADGE[w.type]||'gpp'}">${w.type}</span>
-          <div style="font-size:14px;font-weight:600;margin-bottom:2px">${w.name}</div>
-          ${w.result?`<div class="text-sm text-muted">${w.result}</div>`:''}
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            ${w.rpe?`<div class="text-sm" style="color:var(--accent)">RPE ${w.rpe}/10</div>`:''}
-            ${wShoe?`<div class="text-sm text-muted">${wShoe.name}</div>`:''}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
+    const key = 'sold';
+    const exp = _todayExp.has(key);
+    html += `
+      <div class="card" style="cursor:pointer" onclick="todayToggle('${key}')">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:14px;font-weight:600">Session</span>
+          <span style="font-size:18px;color:var(--muted);line-height:1">${exp?'⌃':'⌄'}</span>
+        </div>
+        ${exp?`
+          ${session.soreness?.length?`<div class="text-sm text-muted" style="margin-top:6px">Soreness: ${session.soreness.join(', ')}</div>`:''}
+          ${session.workouts.map(w=>{
+            const wShoe = S.settings.shoes?.find(sh=>sh.id===w.shoeId);
+            return `<div style="padding:8px 0;border-top:1px solid var(--border);margin-top:6px">
+              <span class="workout-type-badge badge-${TYPE_BADGE[w.type]||'gpp'}">${w.type}</span>
+              <div style="font-size:14px;font-weight:600">${w.name}</div>
+              ${w.result?`<div class="text-sm text-muted">${w.result}</div>`:''}
+              ${w.rpe?`<div class="text-sm" style="color:var(--accent)">RPE ${w.rpe}/10</div>`:''}
+              ${wShoe?`<div class="text-sm text-muted">${wShoe.name}</div>`:''}
+            </div>`;
+          }).join('')}
+        `:''}
+      </div>`;
   }
 
-  // Session summary (garmin-based)
-  if (hasGarminSessions(d)) {
-    html += `<div class="card">
-      <div class="card-header"><span class="card-title">Sessions</span><button class="btn btn-ghost btn-sm" onclick="S.logSubTab='garmin';switchTab('log')">Edit</button></div>
-      ${log.garmin.sessions.map((s,i)=>{
-        const tag = s.tag || s.sessionType || ('Session '+(i+1));
-        const rt = s.runType ? ` · ${s.runType}` : '';
-        const dist = s.manual?.dist ? ` · ${s.manual.dist} mi` : '';
-        const hr = s.manual?.hr ? ` · ${s.manual.hr} bpm` : '';
-        return `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)">${tag}${rt}${dist}${hr}</div>`;
-      }).join('')}
-      ${log.garmin.soreness?.length?`<div class="text-sm text-muted" style="margin-top:6px">Soreness: ${log.garmin.soreness.join(', ')}</div>`:''}
-    </div>`;
-  }
-
-  // Nutrition summary
+  // ── NUTRITION ──────────────────────────────────────────────
   if (hasNutrition(d)) {
     const n = log.nutrition;
     const t = S.settings.macroTargets;
     html += `<div class="card">
-      <div class="card-header"><span class="card-title">Nutrition</span><button class="btn btn-ghost btn-sm" onclick="S.logSubTab='nutrition';switchTab('log')">Edit</button></div>
+      <div class="card-header"><span class="card-title">Nutrition</span><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();S.logSubTab='nutrition';switchTab('log')">Edit</button></div>
       <div class="macro-grid">
         ${[['Cal',n.cal,t.cal,'kcal'],['Protein',n.pro,t.pro,'g'],['Carbs',n.carb,t.carb,'g'],['Fat',n.fat,t.fat,'g']].map(([lbl,val,target,unit])=>`
           <div class="macro-cell">
@@ -1120,9 +1163,19 @@ function renderDayView(d) {
     </div>`;
   }
 
-  if (!html) {
-    html += `<div class="empty-state mt-3"><div class="empty-state-icon">📅</div><div class="empty-state-text">No data for ${fmtDate(d)}.<br>Log your morning check-in to get started.</div></div>`;
+  // ── SUNDAY WEIGH-IN ────────────────────────────────────────
+  if (isSunday(d) && (!m || !m.weight)) {
+    html += `<div class="weigh-in-banner">
+      <div class="weigh-in-icon" style="color:var(--accent)"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 10h2l2-3 2 6 2-3h2"/></svg></div>
+      <div class="weigh-in-text">
+        <div class="weigh-in-title">Sunday Weigh-In</div>
+        <div class="weigh-in-sub">Log your weight in Health → Morning Check-In</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="switchTab('health')">Log →</button>
+    </div>`;
   }
+
+  if (!html) html = `<div class="empty-state mt-3"><div class="empty-state-icon">📅</div><div class="empty-state-text">No data for ${fmtDate(d)}.<br>Log your morning check-in to get started.</div></div>`;
 
   return html;
 }
