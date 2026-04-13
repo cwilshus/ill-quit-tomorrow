@@ -704,8 +704,92 @@ async function evolvePlan() {
 function athleteCtx() {
   const wk = currentWeekNum(), tot = totalWeekNum();
   const weekCtx = wk && tot ? `Week ${wk} of ${tot}` : 'Training in progress';
-  const goalsStr = S.settings.goals ? ` Current goals: ${S.settings.goals}` : '';
-  return `Athlete: Caleb Wilshusen, 38yo male, 163 lbs, training for Hyrox (race: ${S.settings.raceDate}, ${daysUntil(S.settings.raceDate)} days away, ${weekCtx}). Weekly schedule: Sun=Compromised Run, Mon=Bike Recovery, Tue=Easy Z2, Wed=Threshold+Strength, Thu=Bike Aerobic, Fri=Key Run, Sat=Long Run. Primary training: Monostructural, GPP, Strength from Hybrid Engine Pro Track.${goalsStr}` + buildCoachContext(today());
+  const d = today();
+  const m = S.logs[d]?.morning;
+
+  // Today's readiness
+  let readiness = 'Not yet logged.';
+  if (m && (m.hrv || m.recovery || m.sleepScore)) {
+    const parts = [];
+    if (m.hrv) parts.push(`HRV: ${m.hrv}`);
+    if (m.recovery) parts.push(`recovery: ${m.recovery}/5`);
+    if (m.sleepScore) parts.push(`sleep score: ${m.sleepScore}`);
+    if (m.sleepH != null) parts.push(`sleep: ${m.sleepH}h${m.sleepM?m.sleepM+'m':''}`);
+    if (m.restingHr) parts.push(`resting HR: ${m.restingHr} bpm`);
+    if (m.weight) parts.push(`weight: ${m.weight} lbs`);
+    readiness = parts.join(', ');
+  }
+
+  // Current week training plan
+  let planCtx = '';
+  const todayPlan = getPlanForDate(d);
+  if (todayPlan) planCtx = `Today's planned session: ${todayPlan}\n`;
+  const currentWeekPlan = (S.trainingPlan||[]).find(w => w.weekStart === weekStart(d));
+  if (currentWeekPlan) {
+    planCtx += `This week's plan:\n${Object.entries(currentWeekPlan.sessions).map(([day,s])=>`  ${day}: ${s}`).join('\n')}\n`;
+  }
+
+  const goalsStr = S.settings.goals ? `\nAthlete-defined goals: ${S.settings.goals}` : '';
+
+  return `=== ATHLETE PROFILE ===
+Caleb Wilshusen, 38yo male, 167 lbs, 5'10". Body comp goal: 165–170 lbs, 10% body fat.
+Race: Hyrox on ${S.settings.raceDate} (${daysUntil(S.settings.raceDate)} days away, ${weekCtx}).${goalsStr}
+
+RACE HISTORY:
+- Dec 2024 Anaheim Open 35-39: 1:28:58
+- Jan 2025 Las Vegas Open 35-39: 1:25:53
+- Dec 2025 Anaheim Open 35-39: 1:24:21 | Doubles Men: 1:07:12
+- Jan 2026 Phoenix Open 35-39: 1:17:54 | Doubles Mixed: 1:14:29
+Phoenix station split (most recent): Runs 4:37→4:27→4:39→4:41→4:57→5:09→5:13→5:37.
+Strong: Sled Push 3:05, Sled Pull 4:19, Farmers Carry 2:04, Sandbag Lunge 4:37.
+Weak: Wall Balls 5:28, Burpee Broad Jump 4:45.
+
+CURRENT FITNESS:
+Easy pace: 5.5–5.6 mph | Threshold: 8.0–8.1 mph (8.2+ mph not durable in long intervals)
+Limiters: run fade under fatigue, cardiac drift on long thresholds (HR spikes set 4–5), left shin fatigue + foot slap at faster sustained paces, leg muscle endurance, burpees, wall balls.
+Strengths: sleds, lunges, rowing, biking, farmers carry.
+1RMs: Deadlift 225, Back Squat 205, Front Squat 180, Bench 205, Strict Press 130, Push Press 150, Reverse Deficit Lunge 135 (all lbs).
+Lower back history (resolved with bracing) — stronger lower back will unlock squat/deadlift. Core work currently underserved.
+
+TRAINING SCHEDULE:
+Sun: Compromised Run | Mon: Bike Recovery | Tue: Easy Z2 + WOD + Strength
+Wed: Threshold Run + Machine Threshold | Thu: Bike Aerobic
+Fri: Key Run + Machine Threshold | Sat: Long Run + WOD + Strength
+Program: Hybrid Engine Pro Track (partial).
+
+EQUIPMENT:
+Home: NordicTrack treadmill, C2 BikeErg, C2 RowErg, barbell to ~270 lbs, dumbbells to 80 lbs, Rogue rack + pull-up bar, bench, landmine, plyo box, bands, 14 lb wall ball.
+Neighbor: sled, SkiErg, sandbag, kettlebells.
+Gym (15–20 min away): occasional, race-specific only.
+
+GOALS:
+June 1 2026: Sub-75 min Hyrox. Priority: burpees, wall balls, running under fatigue, lunges. Farmers Carry: use gloves for grip.
+June 11–July 1: 3-week sabbatical — maintenance (running + bodyweight + occasional gym).
+Fall/Winter 2026: return to racing — Santa recommends race + build (likely 10k, half, or Hyrox season).
+1–2 year: podium 35-39 age group, sub-70 Open Men, attempt Mens Pro.
+Long-term: half marathon, marathon, Ironman.
+
+TODAY'S READINESS: ${readiness}
+${planCtx}${buildCoachContext(d)}`;
+}
+
+function coachSantaSystem() {
+  return `You are Coach Santa, an elite hybrid athlete coach specializing in Hyrox and endurance sports.
+
+PERSONA: Former competitive Hyrox and endurance racer. Has taken athletes from first-timers to podiums, and weekend runners to Boston qualifiers — sometimes the same athlete. Known for building programs that don't force athletes to choose between being fast and being strong. Expert in both Hyrox-specific preparation and running development — periodization, aerobic base building, lactate threshold, VO2max, and race peaking. The coach other coaches call when they don't know what to do.
+
+COACHING STYLE: Direct and honest — won't say a bad week was fine, but always gives a path forward. Uses "we" language. Big picture thinker. Reads data before excuses — pushes hard when things are going well, pulls back when HRV/recovery signals override. Celebrates wins genuinely. References prior conversation trends when relevant. Briefly explains methodology choices and how they compare to alternatives (2 sentences max).
+
+PERSONALITY: Warm but has opinions. Dry humor when appropriate, not cheesy. Confident and concise.
+
+RULES:
+- Respond concisely by default; expand only when asked.
+- Before modifying the training plan, confirm alignment first. Confirm again when changes are implemented.
+- Never use tables, horizontal dividers (---), or pipe characters in responses.
+- Write in prose. Use bold headers only when genuinely needed for structure.
+- Do not use exclamation points for every sentence.
+
+${athleteCtx()}`;
 }
 
 function recentSummary() {
@@ -817,7 +901,7 @@ async function aiText(prompt, imgDataArr=[]) {
 async function chatCall(userMessage, imgData=null) {
   const key = (S.settings.apiKey||'').trim();
   if (!key) throw new Error('No API key — add it in Settings');
-  const system = `You are Coach Santa Claude, the world's best hybrid endurance coach specializing in Hyrox. ${athleteCtx()} ${recentSummary()} Answer concisely and practically.`;
+  const system = coachSantaSystem();
   const history = S.chatHistory.slice(-20).map(m=>({role:m.role,content:[{type:'text',text:m.content}]}));
   const newContent = imgData
     ? [{type:'image',source:{type:'base64',media_type:imgData.split(';')[0].split(':')[1],data:imgData.split(',')[1]}},{type:'text',text:userMessage}]
@@ -843,11 +927,9 @@ async function getAdvice(date) {
   const scheduled = SCHEDULE[dow] || 'Rest/Active Recovery';
   const prompt = `${athleteCtx()}
 
-Today (${date}, ${fmtDay(date)}): Scheduled = ${scheduled}
-Morning check-in: HRV=${m.hrv||'not logged'}, Recovery=${m.recovery||'?'}/5, Sleep score=${m.sleepScore||'?'}, Sleep hours=${m.sleepHours||'?'}, Sleep quality=${m.sleepQuality||'?'}/5, Resting HR=${m.restingHr||'?'} bpm${m.weight?`, Weight=${m.weight} lbs`:''}
-${recentSummary()}
+Today is ${fmtDay(date)} ${date}. Scheduled session: ${scheduled}.
 
-Give brief, specific pre-workout coaching advice for today. 2-3 sentences max. Be direct and practical. Focus on effort level, pacing strategy, or key cues for today's session. No fluff.`;
+Give today's coaching focus in 2–3 sentences. Be direct and specific: effort level, pacing strategy, or one key cue for this session based on today's readiness and recent training. No generic encouragement. If readiness is low, address that directly.`;
   try {
     const text = await aiText(prompt);
     S.summaries[date+'-advice'] = text;
@@ -879,7 +961,7 @@ async function generateWeeklySnapshot(date) {
 Last 7 days training log:
 ${lines.join('\n')||'No data logged yet.'}
 
-You are Coach Santa Claude, the world's best hybrid fitness coach. Give a concise but insightful weekly performance snapshot (4-6 sentences). Cover: training consistency, recovery quality, what's working, one specific thing to adjust next week. Be direct and data-driven — no generic encouragement.`;
+Give a concise weekly performance snapshot (4–6 sentences). Cover: training consistency, recovery quality, what's working, one specific thing to adjust next week. Be direct and data-driven — no generic encouragement.`;
   try {
     const text = await aiText(prompt);
     S.summaries[key] = text;
@@ -922,7 +1004,7 @@ async function generateCoachSummary() {
 Last 7 days training log:
 ${lines.join('\n')||'No data logged yet.'}
 
-You are Coach Santa Claude, the world's best hybrid fitness coach. Give a concise but insightful weekly performance snapshot (4-6 sentences). Cover: training consistency, recovery quality, what's working, one specific thing to adjust next week. Be direct and data-driven — no generic encouragement.`;
+Give a concise weekly performance snapshot (4–6 sentences). Cover: training consistency, recovery quality, what's working, one specific thing to adjust next week. Be direct and data-driven — no generic encouragement.`;
   try {
     const text = await aiText(prompt);
     S.summaries[key] = text;
@@ -1313,7 +1395,7 @@ async function analyzeSleepImg(d) {
   const sleepStr = m.sleepH!=null ? `${m.sleepH}h ${m.sleepM||0}m` : m.sleepHours ? `${m.sleepHours}h` : 'unknown';
   try {
     const text = await aiText(`${athleteCtx()}
-You are the world's best hybrid fitness coach. Analyze this Garmin sleep screenshot for ${d} (total sleep: ${sleepStr}).
+Analyze this Garmin sleep screenshot for ${d} (total sleep: ${sleepStr}).
 
 Write in short prose paragraphs. No tables, no dashes, no dividers, no bullet points. Use bold headers only.
 
@@ -1578,7 +1660,7 @@ async function analyzeAllGarminSessions(d) {
   const readiness = `HRV: ${m.hrv||'not logged'}, Recovery: ${m.recovery||'?'}/5, Sleep: ${m.sleepHours?m.sleepHours+'h':'not logged'}`;
   try {
     const text = await aiText(`${athleteCtx()}
-You are the world's best hybrid fitness coach. Analyze these Garmin training screenshots for ${d}.
+Analyze these Garmin training screenshots for ${d}.
 
 Morning readiness: ${readiness}
 Manual session data:
@@ -2132,7 +2214,7 @@ async function sendChat() {
       // Pass program screenshots as context with chat
       const key = (S.settings.apiKey||'').trim();
       if (!key) throw new Error('No API key');
-      const system = `You are Coach Santa Claude, the world's best hybrid endurance coach specializing in Hyrox. ${athleteCtx()} ${recentSummary()} Answer concisely and practically.`;
+      const system = coachSantaSystem();
       const history = S.chatHistory.slice(-20).map(m=>({role:m.role,content:[{type:'text',text:m.content}]}));
       // Add program images to the last user message
       const lastMsg = history[history.length-1];
