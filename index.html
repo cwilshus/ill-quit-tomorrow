@@ -1897,7 +1897,7 @@ function renderBottomNav() {
     {id:'today',label:'Today',icon:'<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'},
     {id:'log',label:'Log',icon:'<path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>'},
     {id:'health',label:'Health',icon:'<path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>'},
-    {id:'progress',label:'Progress',icon:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'},
+    {id:'progress',label:'Trends',icon:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'},
     {id:'plan',label:'Coach',imgSrc:SANTA_ICON_64}
   ];
   document.getElementById('bottomNav').innerHTML = tabs.map(t=>`
@@ -1937,55 +1937,71 @@ function renderProgressContent() {
   const el = document.getElementById('tab-progress');
   const view = S.progressView || 'weekly';
 
-  function periodKey(d) {
-    if (view==='weekly') return weekStart(d);
-    return d.slice(0,7);
-  }
+  function periodKey(d) { return view==='weekly' ? weekStart(d) : d.slice(0,7); }
   function periodLabel(k) {
     if (view==='weekly') return fmtDate(k);
     const dt = new Date(k+'-01T12:00:00');
     return dt.toLocaleDateString('en-US',{month:'short',year:'numeric'});
   }
+  function aggregate(raw, mode='avg') {
+    const map = {};
+    raw.forEach(p=>{ const k=periodKey(p.d); if(!map[k]) map[k]={sum:0,count:0}; map[k].sum+=p.y; map[k].count++; });
+    return Object.keys(map).sort().map(k=>({x:k, y:mode==='avg'?map[k].sum/map[k].count:map[k].sum}));
+  }
 
-  const paceRaw = [], weightRaw = [], milesRaw = [];
-  let totalRuns = 0;
+  // ── Fitness data ──────────────────────────────────────────
+  const paceRaw=[], weightRaw=[], milesRaw=[], loadRaw=[];
+  let totalRuns=0, totalSessions=0;
   const sortedDates = Object.keys(S.logs).sort();
 
   sortedDates.forEach(d=>{
     const log = S.logs[d];
+    let dayLoad = 0;
     (log?.garmin?.sessions||[]).forEach(s=>{
       const dist = parseFloat(s.manual?.dist)||0;
-      if (dist) milesRaw.push({d, y:dist}); // all sessions including warmups
+      if (dist) milesRaw.push({d, y:dist});
       if (isWarmup(s.tag)) return;
-      if (s.sessionType === 'Monostructural') totalRuns++;
+      totalSessions++;
+      if (s.sessionType==='Monostructural') totalRuns++;
       if (s.manual?.pace) {
         const parts = s.manual.pace.split(':');
-        if (parts.length===2) {
-          const mins = parseFloat(parts[0]) + parseFloat(parts[1])/60;
-          if (!isNaN(mins)) paceRaw.push({d, y:mins});
-        }
+        if (parts.length===2) { const mins=parseFloat(parts[0])+parseFloat(parts[1])/60; if (!isNaN(mins)) paceRaw.push({d, y:mins}); }
       }
+      const rpe = parseFloat(s.manual?.rpe)||5;
+      dayLoad += dist * rpe;
     });
+    if (hasStrength(d)) totalSessions++;
+    if (dayLoad) loadRaw.push({d, y:dayLoad});
     const w = log?.morning?.weight;
     if (w) weightRaw.push({d, y:w});
   });
 
-  // Aggregate by period
-  function aggregate(raw, mode='avg') {
-    const map = {};
-    raw.forEach(p=>{
-      const k = periodKey(p.d);
-      if (!map[k]) map[k]={sum:0,count:0};
-      map[k].sum += p.y; map[k].count++;
-    });
-    return Object.keys(map).sort().map(k=>({x:k, y:mode==='avg'?map[k].sum/map[k].count:map[k].sum}));
-  }
+  // ── Health data ───────────────────────────────────────────
+  const hrvRaw=[], restHrRaw=[], sleepScoreRaw=[], sleepHrsRaw=[], calRaw=[], proRaw=[], carbRaw=[], fatRaw=[];
+  const hrvMap = {green:3, yellow:2, red:1};
 
-  const paceData = aggregate(paceRaw, 'avg');
-  const weightData = aggregate(weightRaw, 'avg');
-  const milesData = aggregate(milesRaw, 'sum');
+  sortedDates.forEach(d=>{
+    const m = S.logs[d]?.morning || {};
+    if (m.hrv && hrvMap[m.hrv]) hrvRaw.push({d, y:hrvMap[m.hrv]});
+    if (m.restingHr) restHrRaw.push({d, y:m.restingHr});
+    if (m.sleepScore) sleepScoreRaw.push({d, y:m.sleepScore});
+    const hrs = (m.sleepH||0) + (m.sleepM||0)/60;
+    if (hrs>0) sleepHrsRaw.push({d, y:hrs});
+    const n = S.logs[d]?.nutrition || {};
+    if (n.cal) calRaw.push({d, y:n.cal});
+    if (n.pro) proRaw.push({d, y:n.pro});
+    if (n.carb) carbRaw.push({d, y:n.carb});
+    if (n.fat) fatRaw.push({d, y:n.fat});
+  });
 
-  const totalMiles = milesRaw.reduce((acc,p)=>acc+p.y, 0);
+  const paceData=aggregate(paceRaw,'avg'), weightData=aggregate(weightRaw,'avg');
+  const milesData=aggregate(milesRaw,'sum'), loadData=aggregate(loadRaw,'sum');
+  const hrvData=aggregate(hrvRaw,'avg'), restHrData=aggregate(restHrRaw,'avg');
+  const sleepScoreData=aggregate(sleepScoreRaw,'avg'), sleepHrsData=aggregate(sleepHrsRaw,'avg');
+  const calData=aggregate(calRaw,'avg'), proData=aggregate(proRaw,'avg');
+  const carbData=aggregate(carbRaw,'avg'), fatData=aggregate(fatRaw,'avg');
+
+  const totalMiles = milesRaw.reduce((a,p)=>a+p.y, 0);
 
   // Shoe mileage
   const shoeMiles = {};
@@ -1998,53 +2014,65 @@ function renderProgressContent() {
     });
   });
 
-  const totalSessions = sortedDates.reduce((acc,d)=>{
-    const nonWarmup = (S.logs[d]?.garmin?.sessions||[]).filter(s=>!isWarmup(s.tag)).length;
-    return acc + nonWarmup + (hasStrength(d)?1:0);
-  }, 0);
+  function chartPlaceholder(msg) { return `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px">${msg}</div>`; }
 
   el.innerHTML = `
-    <div class="section-header">Progress</div>
-
+    <div class="section-header">Trends</div>
     <div class="view-toggle" style="margin-bottom:0">
       <button class="view-toggle-btn ${view==='weekly'?'active':''}" onclick="S.progressView='weekly';renderProgressContent()">Weekly</button>
       <button class="view-toggle-btn ${view==='monthly'?'active':''}" onclick="S.progressView='monthly';renderProgressContent()">Monthly</button>
     </div>
 
+    <!-- Fitness summary stats -->
     <div class="card" style="margin:12px 16px;display:flex;gap:20px;flex-wrap:wrap">
-      <div>
-        <div style="font-size:28px;font-weight:700;color:var(--text);line-height:1">${totalSessions}</div>
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Sessions</div>
-      </div>
+      <div><div style="font-size:26px;font-weight:700;color:var(--text);line-height:1">${totalSessions}</div><div class="label" style="margin-top:4px">Sessions</div></div>
       <div style="width:1px;background:var(--border)"></div>
-      <div>
-        <div style="font-size:28px;font-weight:700;color:var(--text);line-height:1">${totalRuns}</div>
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Runs</div>
-      </div>
+      <div><div style="font-size:26px;font-weight:700;color:var(--text);line-height:1">${totalRuns}</div><div class="label" style="margin-top:4px">Runs</div></div>
       <div style="width:1px;background:var(--border)"></div>
-      <div>
-        <div style="font-size:28px;font-weight:700;color:var(--accent);line-height:1">${totalMiles.toFixed(1)}</div>
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:4px">Miles</div>
-      </div>
+      <div><div style="font-size:26px;font-weight:700;color:var(--accent);line-height:1">${totalMiles.toFixed(1)}</div><div class="label" style="margin-top:4px">Miles</div></div>
     </div>
 
-    <div class="card-title-lg" style="padding:0 16px 8px">Miles Logged</div>
-    <div class="chart-wrap">
-      ${milesData.length?`<canvas id="milesChart"></canvas>`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:14px">Log sessions to see miles</div>`}
-    </div>
+    <div class="card-title-lg" style="padding:0 16px 8px">Miles per ${view==='weekly'?'Week':'Month'}</div>
+    <div class="chart-wrap">${milesData.length?`<canvas id="milesChart"></canvas>`:chartPlaceholder('Log sessions to see miles')}</div>
 
-    <div class="card-title-lg" style="padding:0 16px 8px">Running Pace Trend</div>
-    <div class="chart-wrap">
-      ${paceData.length?`<canvas id="paceChart"></canvas>`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:14px">Log runs with pace to see trend</div>`}
-    </div>
+    <div class="card-title-lg" style="padding:0 16px 8px">Running Pace</div>
+    <div class="chart-wrap">${paceData.length?`<canvas id="paceChart"></canvas>`:chartPlaceholder('Log runs with pace to see trend')}</div>
+
+    <div class="card-title-lg" style="padding:0 16px 8px">Training Load</div>
+    <div class="chart-wrap">${loadData.length?`<canvas id="loadChart"></canvas>`:chartPlaceholder('Log sessions with RPE to see load')}</div>
+
+    <!-- Health & Sleep -->
+    <div class="section-header" style="margin-top:8px">Health &amp; Sleep</div>
+
+    <div class="card-title-lg" style="padding:0 16px 8px">HRV Readiness</div>
+    <div class="chart-wrap">${hrvData.length?`<canvas id="hrvChart"></canvas>`:chartPlaceholder('Log HRV to see trend')}</div>
+
+    <div class="card-title-lg" style="padding:0 16px 8px">Resting Heart Rate</div>
+    <div class="chart-wrap">${restHrData.length?`<canvas id="restHrChart"></canvas>`:chartPlaceholder('Log resting HR to see trend')}</div>
+
+    <div class="card-title-lg" style="padding:0 16px 8px">Sleep Score</div>
+    <div class="chart-wrap">${sleepScoreData.length?`<canvas id="sleepScoreChart"></canvas>`:chartPlaceholder('Log sleep score to see trend')}</div>
+
+    <div class="card-title-lg" style="padding:0 16px 8px">Sleep Hours</div>
+    <div class="chart-wrap">${sleepHrsData.length?`<canvas id="sleepHrsChart"></canvas>`:chartPlaceholder('Log sleep to see trend')}</div>
 
     <div class="card-title-lg" style="padding:0 16px 8px">Body Weight</div>
-    <div class="chart-wrap">
-      ${weightData.length?`<canvas id="weightChart"></canvas>`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:14px">Log weight in Health tab to see trend</div>`}
-    </div>
+    <div class="chart-wrap">${weightData.length?`<canvas id="weightChart"></canvas>`:chartPlaceholder('Log weight to see trend')}</div>
 
+    <!-- Nutrition -->
+    ${(calData.length||proData.length)?`
+    <div class="section-header" style="margin-top:8px">Nutrition</div>
+
+    <div class="card-title-lg" style="padding:0 16px 8px">Calories</div>
+    <div class="chart-wrap">${calData.length?`<canvas id="calChart"></canvas>`:chartPlaceholder('Log nutrition to see trends')}</div>
+
+    <div class="card-title-lg" style="padding:0 16px 8px">Macros (g)</div>
+    <div class="chart-wrap">${proData.length?`<canvas id="macroChart"></canvas>`:chartPlaceholder('Log nutrition to see trends')}</div>
+    `:''}
+
+    <!-- Shoe mileage -->
     ${S.settings.shoes.length?`
-    <div class="section-header">Shoe mileage</div>
+    <div class="section-header" style="margin-top:8px">Shoe Mileage</div>
     <div class="card">
       ${S.settings.shoes.map(shoe=>`
         <div class="shoe-bar-row" style="align-items:center">
@@ -2057,18 +2085,41 @@ function renderProgressContent() {
   `;
 
   setTimeout(()=>{
-    const chartOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#6B7D7A'},grid:{color:'#263030'}},x:{ticks:{color:'#6B7D7A',maxTicksLimit:7},grid:{color:'#263030'}}}};
-    if (milesData.length) {
-      const ctx = document.getElementById('milesChart');
-      if (ctx) new Chart(ctx, {type:'bar',data:{labels:milesData.map(p=>periodLabel(p.x)),datasets:[{label:'Miles',data:milesData.map(p=>p.y),backgroundColor:'rgba(219,101,101,0.6)',borderColor:'#DB6565',borderWidth:1,borderRadius:4}]},options:{...chartOpts}});
+    const co = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#6B7D7A'},grid:{color:'#263030'}},x:{ticks:{color:'#6B7D7A',maxTicksLimit:7},grid:{color:'#263030'}}}};
+    const lineDs = (data,color,fill=false) => [{label:'',data:data.map(p=>p.y),borderColor:color,backgroundColor:color.replace(')',',0.12)').replace('rgb','rgba'),fill,tension:.3,pointBackgroundColor:color,pointRadius:3}];
+    const barDs  = (data,color) => [{label:'',data:data.map(p=>p.y),backgroundColor:color.replace(')',',0.6)').replace('rgb','rgba'),borderColor:color,borderWidth:1,borderRadius:3}];
+
+    function mkLine(id, data, opts={}) {
+      const ctx = document.getElementById(id);
+      if (!ctx || !data.length) return;
+      new Chart(ctx, {type:'line',data:{labels:data.map(p=>periodLabel(p.x)),datasets:lineDs(data, opts.color||'rgb(219,101,101)', true)},options:{...co, ...(opts.yOpts?{scales:{...co.scales,y:{...co.scales.y,...opts.yOpts}}}:{})}});
     }
-    if (paceData.length) {
-      const ctx = document.getElementById('paceChart');
-      if (ctx) new Chart(ctx, {type:'line',data:{labels:paceData.map(p=>periodLabel(p.x)),datasets:[{label:'Avg Pace',data:paceData.map(p=>p.y),borderColor:'#DB6565',backgroundColor:'rgba(219,101,101,0.1)',fill:true,tension:.3,pointBackgroundColor:'#DB6565',pointRadius:4}]},options:{...chartOpts,scales:{...chartOpts.scales,y:{...chartOpts.scales.y,reverse:true,ticks:{color:'#6B7D7A',callback:v=>{const m=Math.floor(v);const s=Math.round((v-m)*60);return m+':'+(s<10?'0':'')+s}}}}}});
+    function mkBar(id, data, color) {
+      const ctx = document.getElementById(id);
+      if (!ctx || !data.length) return;
+      new Chart(ctx, {type:'bar',data:{labels:data.map(p=>periodLabel(p.x)),datasets:barDs(data,color)},options:{...co}});
     }
-    if (weightData.length) {
-      const ctx = document.getElementById('weightChart');
-      if (ctx) new Chart(ctx, {type:'line',data:{labels:weightData.map(p=>periodLabel(p.x)),datasets:[{label:'Weight (lbs)',data:weightData.map(p=>p.y),borderColor:'#799C62',backgroundColor:'rgba(121,156,98,0.1)',fill:true,tension:.3,pointBackgroundColor:'#799C62',pointRadius:4}]},options:{...chartOpts}});
+
+    mkBar('milesChart', milesData, 'rgb(219,101,101)');
+    mkLine('paceChart', paceData, {color:'rgb(219,101,101)', yOpts:{reverse:true, ticks:{color:'#6B7D7A',callback:v=>{const m=Math.floor(v);const s=Math.round((v-m)*60);return m+':'+(s<10?'0':'')+s}}}});
+    mkBar('loadChart', loadData, 'rgb(180,130,80)');
+    mkLine('hrvChart', hrvData, {color:'rgb(121,156,98)', yOpts:{min:0.5,max:3.5,ticks:{color:'#6B7D7A',callback:v=>v===3?'Green':v===2?'Yellow':v===1?'Red':''}}});
+    mkLine('restHrChart', restHrData, {color:'rgb(219,101,101)'});
+    mkLine('sleepScoreChart', sleepScoreData, {color:'rgb(100,160,200)'});
+    mkLine('sleepHrsChart', sleepHrsData, {color:'rgb(100,160,200)'});
+    mkLine('weightChart', weightData, {color:'rgb(121,156,98)'});
+    mkBar('calChart', calData, 'rgb(200,160,80)');
+    // Macro stacked bars
+    if (proData.length) {
+      const ctx = document.getElementById('macroChart');
+      if (ctx) {
+        const labels = proData.map(p=>periodLabel(p.x));
+        new Chart(ctx, {type:'bar',data:{labels,datasets:[
+          {label:'Protein',data:proData.map(p=>p.y),backgroundColor:'rgba(219,101,101,0.7)',borderRadius:2},
+          {label:'Carbs',data:carbData.map(p=>p.y),backgroundColor:'rgba(200,160,80,0.7)',borderRadius:2},
+          {label:'Fat',data:fatData.map(p=>p.y),backgroundColor:'rgba(121,156,98,0.7)',borderRadius:2}
+        ]},options:{...co,plugins:{legend:{display:true,labels:{color:'#6B7D7A',boxWidth:10,font:{size:11}}}},scales:{...co.scales,x:{...co.scales.x,stacked:false}}}});
+      }
     }
   }, 50);
 }
