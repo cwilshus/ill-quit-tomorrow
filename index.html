@@ -196,6 +196,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 
 /* GARMIN */
 .garmin-session{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px}
+.session-card-body{font-size:13px;line-height:1.55;color:var(--text)}
 .img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
 .img-thumb{aspect-ratio:1;border-radius:6px;object-fit:cover;width:100%;cursor:pointer}
 .img-add{aspect-ratio:1;border-radius:6px;background:var(--surface);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:22px;transition:border-color .15s}
@@ -361,7 +362,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────
 const STORE_KEY = 'iqt_v1';
-const APP_VERSION = '20260414-001';
+const APP_VERSION = '20260414-002';
 const MODEL = 'claude-opus-4-5';
 const WORKOUT_TYPES = ['Monostructural','GPP','Strength','Applied Strength','Gross Conditioning','Extra Credit'];
 const FORMATS = ['AMRAP','For Time','EMOM','Rounds','Duration','For Distance','For Weight','Custom'];
@@ -381,7 +382,7 @@ const SCHEDULE_SESSION_TYPE = {'Compromised Run':'Monostructural','Bike Recovery
 const SCHEDULE_RUN_TYPE = {'Compromised Run':'Easy','Easy Z2 Run':'Easy','Threshold':'Threshold','Key Run':'Tempo','Long Run':'Long'};
 
 /** Bump when Santa canonical block/plan text changes; triggers one-time merge into localStorage. */
-const PLAN_SOURCE_VERSION = 1;
+const PLAN_SOURCE_VERSION = 3;
 
 const INITIAL_GOALS_SANTA = `1. Eliminate the run fade — train holding pace when pre-fatigued (run-after-work, back-half loaded threshold).
 2. Build burpee and wall ball capacity — high-frequency, moderate-volume exposure; muscular endurance + skill.
@@ -395,42 +396,30 @@ Weekly structure: Mon recovery (easy bike/walk + mobility) · Tue easy Z2 run + 
 
 Source: Santa chat export, committed as SANTA_BLOCK_AND_PLAN.md (Apr 2026).`;
 
-const SANTA_WEEK_2026_04_13 = {
-  weekStart: '2026-04-13',
+/** Santa weeks use calendar Tue–Mon blocks; weekStart is the first training day (Tuesday). */
+const SANTA_WEEK_2026_04_14 = {
+  weekStart: '2026-04-14',
   sessions: {
-    Mon: 'Optional: rest or easy 30–40 min spin + mobility (prep before Tue block opener).',
     Tue: 'Recovery — 40 min C2 bike Z1–Z2 @ 90 rpm, 130–150w; 10 min mobility (hips/ankles).',
     Wed: 'Easy run + Strength A — Run: 5 mi easy Z2 (10:30–11:00/mi, HR under 150). Strength: back squat 4×6 @ 165 lb, reverse deficit lunge 3×8/leg @ 95, RDL 3×10 @ 135, dead bug 3×12/side, Pallof 3×10/side, plank 3×45s.',
     Thu: 'Threshold run — WU 1 mi easy. Main: 4×5 min @ 8.0 mph, 2 min jog (HR cap ~175 set 4). CD 1 mi easy. ~5.5 mi.',
     Fri: 'Machine threshold — C2 row 4×1000m @ 1:55–2:00/500m, 2 min rest. Then 3×15 wall balls (smooth rhythm, consistent catch); 60s between sets.',
     Sat: 'Key run intervals — WU 1 mi easy. Main: 5×1 km @ 7:20–7:30/mi, 90s jog. CD 0.5 mi easy. ~5 mi.',
-    Sun: 'Long run + stations — Run 8 mi Z2, last 2 mi tempo (8:45–9:00/mi). Stations: 5×20 wall balls, 3×8 burpee broad jumps; form over speed, rest as needed.'
+    Sun: 'Long run + stations — Run 8 mi Z2, last 2 mi tempo (8:45–9:00/mi). Stations: 5×20 wall balls, 3×8 burpee broad jumps; form over speed, rest as needed.',
+    Mon: 'Race simulation (W5) — 5 rounds for quality: 1 km run @ 8:00–8:15/mi, 20 wall balls, 90s rest between rounds. Hold run pace; note fade.'
   }
 };
 
-const SANTA_WEEK_2026_04_20 = {
-  weekStart: '2026-04-20',
+const SANTA_WEEK_2026_04_21 = {
+  weekStart: '2026-04-21',
   sessions: {
-    Mon: 'Race simulation (W5) — 5 rounds for quality: 1 km run @ 8:00–8:15/mi, 20 wall balls, 90s rest between rounds. Hold run pace; note fade.',
     Tue: 'Recovery — 35 min easy walk or Z1 bike; 15 min mobility (thoracic spine + hip flexors).',
     Wed: 'Easy run + Strength A — Run 5.5 mi Z2. Strength: front squat 4×5 @ 145, walking lunge 3×12/leg @ 95 barbell, SL RDL 3×8/leg @ 40 lb DB, bird dog 3×10/side, side plank 3×30s/side, hollow hold 3×30s.',
     Thu: 'Threshold run — WU 1 mi easy. Main: 2×10 min @ 8.0 mph, 3 min jog (note if HR exceeds ~178 in back half). CD 1 mi easy. ~6 mi.',
     Fri: 'Machine threshold — SkiErg 5×500m @ 1:45–1:50/500m, 90s rest (breathing, lats). Then 4×10 burpee broad jumps, 90s rest; consistent jump distance.',
     Sat: 'Key run tempo — WU 1 mi easy. Main: 25 min continuous @ 7:45–8:00/mi (treadmill 7.5–7.7 mph), no walk breaks. CD 1 mi easy. ~5.5 mi.',
-    Sun: 'Long run + stations — Run 9 mi Z2, final 2.5 mi moderate tempo (8:30–8:45/mi). Stations: sled push 4×50m + sled pull 4×50m @ race weight (crisp maintenance); then 3×20 wall balls.'
-  }
-};
-
-const SANTA_WEEK_2026_04_27 = {
-  weekStart: '2026-04-27',
-  sessions: {
-    Mon: 'Race simulation (W6) — 4 rounds for quality: 1 km @ 7:50–8:00/mi, 15 burpee broad jumps, 20 wall balls; 2 min rest between rounds. Compare 4th vs 1st km split (target under ~10s fade).',
-    Tue: '5 mi easy Z2',
-    Wed: '5–6 mi total w/ 20 min threshold (reduced volume)',
-    Thu: '35–45 min C2 bike aerobic',
-    Fri: '4×1 km intervals',
-    Sat: '7–9 mi long run Z2, last 2 mi fast finish',
-    Sun: '6 rounds: 800m run + 20 lunges'
+    Sun: 'Long run + stations — Run 9 mi Z2, final 2.5 mi moderate tempo (8:30–8:45/mi). Stations: sled push 4×50m + sled pull 4×50m @ race weight (crisp maintenance); then 3×20 wall balls.',
+    Mon: 'Race simulation (W6) — 4 rounds for quality: 1 km @ 7:50–8:00/mi, 15 burpee broad jumps, 20 wall balls; 2 min rest between rounds. Compare 4th vs 1st km split (target under ~10s fade).'
   }
 };
 
@@ -439,9 +428,8 @@ const INITIAL_PLAN = [
   { weekStart:'2026-03-23', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 3×8 min @ threshold (2 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'Kenyan floats: 6 km alternating hard/float', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'5 rounds: 1 km run + 20 wall balls' }},
   { weekStart:'2026-03-30', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 2×12 min @ threshold (3 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'6×1 km intervals, 2 min rest', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'4 rounds: 1 km run + 20 wall balls' }},
   { weekStart:'2026-04-06', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 2×12 min @ threshold (3 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'Kenyan floats: 7 km alternating hard/float', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'5 rounds: 1 km run + 20 wall balls' }},
-  SANTA_WEEK_2026_04_13,
-  SANTA_WEEK_2026_04_20,
-  SANTA_WEEK_2026_04_27,
+  SANTA_WEEK_2026_04_14,
+  SANTA_WEEK_2026_04_21,
   { weekStart:'2026-05-04', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 20 min threshold (reduced volume)', Thu:'35–45 min C2 bike aerobic', Fri:'3×1 km race-effort repeats', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'Light simulation: 4 rounds 800m run + 15 burpees' }}
 ];
 
@@ -457,18 +445,59 @@ function maybeApplyPlanSourceSeed() {
     if (i >= 0) S.trainingPlan[i] = copy;
     else S.trainingPlan.push(copy);
   }
-  upsertWeek(SANTA_WEEK_2026_04_13);
-  upsertWeek(SANTA_WEEK_2026_04_20);
-  upsertWeek(SANTA_WEEK_2026_04_27);
+  if (PLAN_SOURCE_VERSION >= 3) {
+    const purge = new Set(['2026-04-13', '2026-04-20', '2026-04-27']);
+    S.trainingPlan = (S.trainingPlan || []).filter(w => !purge.has(w.weekStart));
+  }
+  upsertWeek(SANTA_WEEK_2026_04_14);
+  upsertWeek(SANTA_WEEK_2026_04_21);
   S.trainingPlan.sort((a,b) => a.weekStart.localeCompare(b.weekStart));
   save();
 }
 
+function dowKeyForDate(d) {
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(d + 'T12:00:00').getDay()];
+}
+
+/** Seven calendar days starting at stored weekStart (any weekday). */
+function getPlanWeekDays(weekStartStr) {
+  return Array.from({ length: 7 }, (_, i) => addDays(weekStartStr, i));
+}
+
+function findPlanWeekForDate(d) {
+  return (S.trainingPlan || []).find(w => {
+    if (!w || !w.weekStart) return false;
+    const end = addDays(w.weekStart, 6);
+    return d >= w.weekStart && d <= end;
+  }) || null;
+}
+
+function planWeekStartForNav(d) {
+  const w = findPlanWeekForDate(d);
+  if (w) return w.weekStart;
+  const plan = S.trainingPlan || [];
+  const fut = plan.filter(x => x.weekStart > d).sort((a, b) => a.weekStart.localeCompare(b.weekStart))[0];
+  return fut ? fut.weekStart : weekStart(d);
+}
+
 function getPlanForDate(d) {
-  const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(d+'T12:00:00').getDay()];
-  const wk = weekStart(d);
-  const week = (S.trainingPlan||[]).find(w => w.weekStart === wk);
-  return week ? (week.sessions[dow] || null) : null;
+  const week = findPlanWeekForDate(d);
+  if (!week || !week.sessions) return null;
+  const key = dowKeyForDate(d);
+  return week.sessions[key] || null;
+}
+
+function planWeekDaySummaryLines(week) {
+  if (!week || !week.sessions) return '';
+  return getPlanWeekDays(week.weekStart)
+    .map(d => {
+      const k = dowKeyForDate(d);
+      const s = week.sessions[k];
+      if (!s) return '';
+      return `  ${fmtDay(d)} ${d} (${k}): ${s}`;
+    })
+    .filter(Boolean)
+    .join('\n');
 }
 
 function blockKey(d) {
@@ -554,6 +583,33 @@ function loadState() {
 function today() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function fmtDate(d) { const dt = new Date(d+'T12:00:00'); return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 function fmtDay(d) { const dt = new Date(d+'T12:00:00'); return dt.toLocaleDateString('en-US',{weekday:'short'}); }
+
+function escPlanHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Readable HTML for plan / session description (line breaks instead of dense punctuation). */
+function formatSessionCardHtml(s) {
+  if (!s) return '';
+  let t = escPlanHtml(s).trim();
+  t = t.replace(/^\s*[-*•]\s+/gm, '');
+  t = t.replace(/\s*·\s*/g, '<br>');
+  t = t.replace(/\s*;\s*/g, '<br>');
+  t = t.replace(/\s+—\s+/g, '<br>');
+  t = t.replace(/(\s)-(\s)/g, '$1<br>$2');
+  return `<div class="session-card-body">${t}</div>`;
+}
+
+function planPreviewOneLine(s) {
+  if (!s) return '';
+  const flat = String(s).replace(/\s*·\s*/g, ' ').replace(/\s*;\s*/g, ' ').replace(/\s+—\s+/g, ' — ').replace(/\s+/g, ' ').trim();
+  return flat.length > 100 ? flat.slice(0, 97) + '…' : flat;
+}
+
 function addDays(d, n) { const dt = new Date(d+'T12:00:00'); dt.setDate(dt.getDate()+n); return dt.toISOString().slice(0,10); }
 function dayOfWeek(d) { return new Date(d+'T12:00:00').getDay(); }
 function isSunday(d) { return dayOfWeek(d) === 0; }
@@ -835,9 +891,9 @@ function athleteCtx() {
   let planCtx = '';
   const todayPlan = getPlanForDate(d);
   if (todayPlan) planCtx = `Today's planned session: ${todayPlan}\n`;
-  const currentWeekPlan = (S.trainingPlan||[]).find(w => w.weekStart === weekStart(d));
+  const currentWeekPlan = findPlanWeekForDate(d);
   if (currentWeekPlan) {
-    planCtx += `This week's plan:\n${Object.entries(currentWeekPlan.sessions).map(([day,s])=>`  ${day}: ${s}`).join('\n')}\n`;
+    planCtx += `This week's plan:\n${planWeekDaySummaryLines(currentWeekPlan)}\n`;
   }
 
   const goalsStr = S.settings.goals ? `\nAthlete-defined goals: ${S.settings.goals}` : '';
@@ -1363,15 +1419,30 @@ function renderDayView(d) {
   if (sessions.length || planDesc) {
     html += `<div style="display:flex;align-items:center;gap:10px;margin:16px 16px 10px">
       <div style="flex:1;height:1px;background:var(--border)"></div>
-      <span style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase">Today's Sessions</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase">${isToday ? "Today's Sessions" : 'Sessions'}</span>
       <div style="flex:1;height:1px;background:var(--border)"></div>
     </div>`;
 
     if (!sessions.length && planDesc) {
-      // No sessions logged yet — show planned workout card
-      html += `<div class="card" style="margin-bottom:8px;border:1px dashed var(--border)">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Planned</div>
-        <div style="font-size:13px;color:var(--text);line-height:1.5">${planDesc}</div>
+      const pk = 'p' + d.replace(/-/g, '');
+      const expP = _todayExp.has(pk);
+      const head = (planDesc.split(/\s*—\s*/)[0] || 'Workout').trim();
+      const headDisp = head.length > 36 ? head.slice(0, 33) + '…' : head;
+      html += `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('${pk}')">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <div style="width:22px;height:22px;margin-top:1px;border-radius:50%;border:2px solid var(--border);flex-shrink:0"></div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:13px;font-weight:700;color:var(--text)">${escPlanHtml(headDisp)}</span>
+              <span style="font-size:16px;color:var(--muted);line-height:1;margin-left:8px;flex-shrink:0">${expP ? '⌃' : '⌄'}</span>
+            </div>
+            ${!expP ? `<div style="font-size:12px;color:var(--muted2);margin-top:3px;line-height:1.45">${escPlanHtml(planPreviewOneLine(planDesc))}</div>` : ''}
+          </div>
+        </div>
+        ${expP ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
+          ${formatSessionCardHtml(planDesc)}
+          ${advice === 'loading' ? `<div class="advice-loading" style="margin-top:10px"><div class="spinner"></div></div>` : advice ? `<div style="margin-top:10px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>` : (isToday && S.settings.apiKey ? `<button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="event.stopPropagation();getAdvice('${d}')">Get Santa's take</button>` : '')}
+        </div>` : ''}
       </div>`;
     }
   }
@@ -1391,7 +1462,7 @@ function renderDayView(d) {
     if (exp) {
       // Workout description (plan for this day)
       if (workout) {
-        expandedContent += `<div style="margin-bottom:16px"><span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Workout</span><div style="font-size:13px;line-height:1.5;color:var(--text);margin-top:3px">${workout}</div></div>`;
+        expandedContent += `<div style="margin-bottom:16px">${formatSessionCardHtml(workout)}</div>`;
       }
       // Santa says brief
       if (advice === 'loading') {
@@ -1421,7 +1492,7 @@ function renderDayView(d) {
             </div>
             <span style="font-size:16px;color:var(--muted);line-height:1;margin-left:8px;flex-shrink:0">${exp?'⌃':'⌄'}</span>
           </div>
-          ${workout?`<div style="font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.4">${workout}</div>`:''}
+          ${workout?`<div style="font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.45">${escPlanHtml(planPreviewOneLine(workout))}</div>`:''}
         </div>
       </div>
       ${expandedContent?`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">${expandedContent}</div>`:''}
@@ -1716,7 +1787,7 @@ function renderLogGarmin() {
     <span>Session · ${fmtDate(d)}</span>
     <span style="font-size:12px;color:var(--accent);font-weight:600">${scheduledLabel}</span>
   </div>
-  ${plan ? `<div class="card" style="border-left:3px solid var(--accent);margin-top:4px;margin-bottom:0"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Today's Plan</div><div style="font-size:13px;color:var(--text);line-height:1.5">${plan}</div></div>` : ''}
+  ${plan ? `<div class="card" style="border-left:3px solid var(--accent);margin-top:4px;margin-bottom:0"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">Plan for ${fmtDay(d)} ${fmtDate(d)}</div>${formatSessionCardHtml(plan)}</div>` : ''}
   <div class="card" style="margin-top:4px">
     <div class="input-group" style="margin:0"><label class="label">Soreness</label><div class="chip-group">${soreChips}</div></div>
   </div>
@@ -2323,7 +2394,8 @@ function renderProgressContent() {
 }
 
 function weekTargetSummary(week) {
-  const vals = Object.values(week.sessions || {}).filter(Boolean);
+  if (!week || !week.sessions) return '—';
+  const vals = getPlanWeekDays(week.weekStart).map(d => week.sessions[dowKeyForDate(d)]).filter(Boolean);
   if (!vals.length) return '—';
   const t = vals.join(' · ');
   return t.length > 160 ? t.slice(0, 157) + '…' : t;
@@ -2358,22 +2430,22 @@ function renderBlockView() {
   }
 
   plan.forEach((week, wi) => {
-    const days = getWeekDays(week.weekStart);
-    const isCurrent = week.weekStart === weekStart(todayStr);
-    const isPast = week.weekStart < weekStart(todayStr);
+    const days = getPlanWeekDays(week.weekStart);
+    const curPw = findPlanWeekForDate(todayStr);
+    const isCurrent = curPw && curPw.weekStart === week.weekStart;
+    const isPast = week.weekStart < todayStr && addDays(week.weekStart, 6) < todayStr;
     let loggedCount = 0;
     days.forEach(d => { if (hasGarminSessions(d) || hasSession(d)) loggedCount++; });
 
-    const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    const dotsHTML = days.map((d, i) => {
+    const dotsHTML = days.map((d) => {
       const hasLog = hasGarminSessions(d) || hasSession(d);
       const isToday = d === todayStr;
-      const isPastDay = d < todayStr;
       const bg = hasLog ? 'var(--green)' : isToday ? 'var(--accent)' : 'var(--surface2)';
       const border = hasLog ? '2px solid var(--green)' : isToday ? '2px solid var(--accent)' : '1px solid var(--border)';
+      const dlab = fmtDay(d).slice(0, 2);
       return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
         <div style="width:24px;height:24px;border-radius:50%;background:${bg};border:${border}"></div>
-        <span style="font-size:9px;color:var(--muted)">${dayLetters[i]}</span>
+        <span style="font-size:9px;color:var(--muted)">${dlab}</span>
       </div>`;
     }).join('');
 
@@ -2381,7 +2453,7 @@ function renderBlockView() {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:13px;font-weight:700;color:${isCurrent ? 'var(--accent)' : 'var(--text)'}">Week ${wi + 1}</span>
-          <span style="font-size:11px;color:var(--muted)">${fmtDate(days[0])} – ${fmtDate(days[6])}</span>
+          <span style="font-size:11px;color:var(--muted)">${fmtDay(days[0])} ${fmtDate(days[0])} – ${fmtDay(days[6])} ${fmtDate(days[6])}</span>
           ${isCurrent ? `<span style="font-size:10px;color:var(--accent);font-weight:600;padding:1px 6px;border:1px solid var(--accent-border);border-radius:8px">Now</span>` : ''}
         </div>
         ${isPast ? `<span style="font-size:11px;color:var(--muted)">${loggedCount}/7 logged</span>` : ''}
@@ -2389,7 +2461,12 @@ function renderBlockView() {
       <div style="font-size:11px;color:var(--muted2);line-height:1.45;margin-bottom:8px"><span style="font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-size:10px">Week target</span><br>${weekTargetSummary(week)}</div>
       <div style="display:flex;gap:6px;justify-content:space-between">${dotsHTML}</div>
       ${isCurrent ? `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
-        ${Object.entries(week.sessions || {}).map(([day, s]) => s ? `<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--muted);display:inline-block;width:28px">${day}</span>${s}</div>` : '').join('')}
+        ${getPlanWeekDays(week.weekStart).map(d => {
+          const k = dowKeyForDate(d);
+          const s = week.sessions?.[k];
+          if (!s) return '';
+          return `<div style="font-size:12px;margin-bottom:10px;line-height:1.45"><div style="font-weight:700;color:var(--muted);margin-bottom:3px">${fmtDay(d)} ${fmtDate(d)}</div>${formatSessionCardHtml(s)}</div>`;
+        }).join('')}
       </div>` : ''}
     </div>`;
   });
@@ -2398,9 +2475,9 @@ function renderBlockView() {
 }
 
 function renderSessionsView() {
-  if (!_planSelWeek) _planSelWeek = weekStart(today());
+  if (!_planSelWeek) _planSelWeek = planWeekStartForNav(today());
   const todayStr = today();
-  const days = getWeekDays(_planSelWeek);
+  const days = getPlanWeekDays(_planSelWeek);
   const planIdx = (S.trainingPlan||[]).findIndex(w => w.weekStart === _planSelWeek);
   const weekPlan = planIdx >= 0 ? S.trainingPlan[planIdx] : null;
   const weekLabel = planIdx >= 0 ? `Week ${planIdx+1}` : 'Week';
@@ -2409,7 +2486,6 @@ function renderSessionsView() {
     ? `${firstDt.toLocaleDateString('en-US',{month:'short'})} ${firstDt.getDate()}–${lastDt.getDate()}`
     : `${firstDt.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${lastDt.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
 
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   let html = `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px">
       <button class="btn btn-secondary btn-sm btn-icon" onclick="_planSelWeek=addDays(_planSelWeek,-7);renderTrainingPlanContent()">‹</button>
@@ -2419,10 +2495,7 @@ function renderSessionsView() {
 
   days.forEach(d => {
     const isToday = d === todayStr;
-    const isPast = d < todayStr;
-    const dt = new Date(d+'T12:00:00');
-    const dayName = dayNames[dt.getDay()];
-    const planned = weekPlan?.sessions?.[dayName.slice(0,3)] || null;
+    const planned = weekPlan?.sessions?.[dowKeyForDate(d)] || null;
     const log = dayLog(d);
     const hasLog = hasGarminSessions(d) || hasSession(d);
     const gSessions = log?.garmin?.sessions || [];
@@ -2465,10 +2538,10 @@ function renderSessionsView() {
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:${planned||hasLog?'4':'0'}px">
             ${dot}
-            <span style="font-size:13px;font-weight:700;color:${isToday?'var(--accent)':'var(--text)'}">${dayName} ${dt.getDate()}</span>
+            <span style="font-size:13px;font-weight:700;color:${isToday?'var(--accent)':'var(--text)'}">${fmtDay(d)} ${fmtDate(d)}</span>
             ${isToday?`<span style="font-size:10px;color:var(--accent);font-weight:600;padding:1px 5px;border:1px solid var(--accent-border);border-radius:8px">Today</span>`:''}
           </div>
-          ${planned?`<div style="font-size:12px;color:${hasLog?'var(--muted)':'var(--text)'};line-height:1.4">${planned}</div>`:''}
+          ${planned?`<div style="font-size:12px;color:${hasLog?'var(--muted)':'var(--text)'};line-height:1.45">${formatSessionCardHtml(planned)}</div>`:''}
           ${sessionBlock}
           ${!planned&&!hasLog?`<div style="font-size:12px;color:var(--muted)">Rest</div>`:''}
         </div>
@@ -2574,7 +2647,7 @@ function addChatImgs(input) {
 function renderTrainingPlanContent() {
   const el = document.getElementById('tab-training-plan');
   if (!el) return;
-  if (!_planSelWeek) _planSelWeek = weekStart(today());
+  if (!_planSelWeek) _planSelWeek = planWeekStartForNav(today());
 
   const viewHTML = _planView==='block' ? renderBlockView() : renderSessionsView();
 
@@ -2695,14 +2768,19 @@ Only return change:true if BOTH conditions are met: coach proposed something spe
   try {
     const result = await aiJSON(prompt);
     if (!result?.change || !result.day || !result.session) return;
-    const wk = weekStart(result.day);
-    const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(result.day+'T12:00:00').getDay()];
-    const weekIdx = (S.trainingPlan||[]).findIndex(w => w.weekStart === wk);
+    const day = result.day;
+    const dow = dowKeyForDate(day);
+    let weekIdx = (S.trainingPlan||[]).findIndex(w => day >= w.weekStart && day <= addDays(w.weekStart, 6));
     if (weekIdx < 0) {
-      const newWeek = {weekStart: wk, sessions: {}};
+      const wk = weekStart(day);
+      weekIdx = (S.trainingPlan||[]).findIndex(w => w.weekStart === wk);
+    }
+    if (weekIdx < 0) {
+      const wk = weekStart(day);
+      const newWeek = { weekStart: wk, sessions: {} };
       newWeek.sessions[dow] = result.session;
       S.trainingPlan.push(newWeek);
-      S.trainingPlan.sort((a,b) => a.weekStart < b.weekStart ? -1 : 1);
+      S.trainingPlan.sort((a, b) => (a.weekStart < b.weekStart ? -1 : 1));
     } else {
       S.trainingPlan[weekIdx].sessions[dow] = result.session;
     }

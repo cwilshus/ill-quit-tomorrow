@@ -1,8 +1,10 @@
 # Santa export — block overview + Weeks 5–6 (April 2026)
 
-Canonical copy for training intent. The app’s `weekStart` keys are **ISO weeks (Monday start)**; session text in `index.html` is aligned to **calendar dates** (e.g. Santa’s “Sunday 4/20” race sim is stored on **Monday 2026-04-20**, which is the real calendar date for that session).
+Canonical copy for training intent.
 
-To **re-apply** this seed after editing locally, clear `planSourceVersion` in stored state (or bump `PLAN_SOURCE_VERSION` in code).
+**How the app stores these weeks:** Santa Weeks 5–6 are saved as **7-day blocks starting on Tuesday** (`weekStart` = first training day). Example: Week 5 uses `weekStart: 2026-04-14` (Tuesday) through **Monday 2026-04-20** (race sim). Older template weeks still use **Monday** `weekStart` with Mon–Sun keys; lookup uses the calendar date for each day.
+
+To **re-apply** the seed after local edits, clear `planSourceVersion` in stored state (or bump `PLAN_SOURCE_VERSION` in code).
 
 ---
 
