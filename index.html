@@ -361,7 +361,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────
 const STORE_KEY = 'iqt_v1';
-const APP_VERSION = '20260413-008';
+const APP_VERSION = '20260414-001';
 const MODEL = 'claude-opus-4-5';
 const WORKOUT_TYPES = ['Monostructural','GPP','Strength','Applied Strength','Gross Conditioning','Extra Credit'];
 const FORMATS = ['AMRAP','For Time','EMOM','Rounds','Duration','For Distance','For Weight','Custom'];
@@ -380,16 +380,89 @@ const EXERCISE_GROUPS = [
 const SCHEDULE_SESSION_TYPE = {'Compromised Run':'Monostructural','Bike Recovery':'Monostructural','Easy Z2 Run':'Monostructural','Threshold':'Monostructural','Bike Aerobic':'Monostructural','Key Run':'Monostructural','Long Run':'Monostructural'};
 const SCHEDULE_RUN_TYPE = {'Compromised Run':'Easy','Easy Z2 Run':'Easy','Threshold':'Threshold','Key Run':'Tempo','Long Run':'Long'};
 
+/** Bump when Santa canonical block/plan text changes; triggers one-time merge into localStorage. */
+const PLAN_SOURCE_VERSION = 1;
+
+const INITIAL_GOALS_SANTA = `1. Eliminate the run fade — train holding pace when pre-fatigued (run-after-work, back-half loaded threshold).
+2. Build burpee and wall ball capacity — high-frequency, moderate-volume exposure; muscular endurance + skill.
+3. Extend threshold durability — hold ~8.0 mph without drift on longer threshold sets.
+4. Lock in core stability — dedicated core on every strength day (non-negotiable).
+5. Race simulation and pacing — mock races in later weeks; practice strategy before taper.`;
+
+const INITIAL_PLAN_WELCOME_SANTA = `Seven weeks to race day: sharpen what you have; fix limiters costing minutes. Stations are already sub-75 pace — the race is won on the runs and the two problem stations.
+
+Weekly structure: Mon recovery (easy bike/walk + mobility) · Tue easy Z2 run + Strength A · Wed threshold run w/ fatigue component · Thu machine threshold (row/ski) · Fri key run (intervals or tempo) · Sat long run + station skill · Sun race simulation (run + station combos).
+
+Source: Santa chat export, committed as SANTA_BLOCK_AND_PLAN.md (Apr 2026).`;
+
+const SANTA_WEEK_2026_04_13 = {
+  weekStart: '2026-04-13',
+  sessions: {
+    Mon: 'Optional: rest or easy 30–40 min spin + mobility (prep before Tue block opener).',
+    Tue: 'Recovery — 40 min C2 bike Z1–Z2 @ 90 rpm, 130–150w; 10 min mobility (hips/ankles).',
+    Wed: 'Easy run + Strength A — Run: 5 mi easy Z2 (10:30–11:00/mi, HR under 150). Strength: back squat 4×6 @ 165 lb, reverse deficit lunge 3×8/leg @ 95, RDL 3×10 @ 135, dead bug 3×12/side, Pallof 3×10/side, plank 3×45s.',
+    Thu: 'Threshold run — WU 1 mi easy. Main: 4×5 min @ 8.0 mph, 2 min jog (HR cap ~175 set 4). CD 1 mi easy. ~5.5 mi.',
+    Fri: 'Machine threshold — C2 row 4×1000m @ 1:55–2:00/500m, 2 min rest. Then 3×15 wall balls (smooth rhythm, consistent catch); 60s between sets.',
+    Sat: 'Key run intervals — WU 1 mi easy. Main: 5×1 km @ 7:20–7:30/mi, 90s jog. CD 0.5 mi easy. ~5 mi.',
+    Sun: 'Long run + stations — Run 8 mi Z2, last 2 mi tempo (8:45–9:00/mi). Stations: 5×20 wall balls, 3×8 burpee broad jumps; form over speed, rest as needed.'
+  }
+};
+
+const SANTA_WEEK_2026_04_20 = {
+  weekStart: '2026-04-20',
+  sessions: {
+    Mon: 'Race simulation (W5) — 5 rounds for quality: 1 km run @ 8:00–8:15/mi, 20 wall balls, 90s rest between rounds. Hold run pace; note fade.',
+    Tue: 'Recovery — 35 min easy walk or Z1 bike; 15 min mobility (thoracic spine + hip flexors).',
+    Wed: 'Easy run + Strength A — Run 5.5 mi Z2. Strength: front squat 4×5 @ 145, walking lunge 3×12/leg @ 95 barbell, SL RDL 3×8/leg @ 40 lb DB, bird dog 3×10/side, side plank 3×30s/side, hollow hold 3×30s.',
+    Thu: 'Threshold run — WU 1 mi easy. Main: 2×10 min @ 8.0 mph, 3 min jog (note if HR exceeds ~178 in back half). CD 1 mi easy. ~6 mi.',
+    Fri: 'Machine threshold — SkiErg 5×500m @ 1:45–1:50/500m, 90s rest (breathing, lats). Then 4×10 burpee broad jumps, 90s rest; consistent jump distance.',
+    Sat: 'Key run tempo — WU 1 mi easy. Main: 25 min continuous @ 7:45–8:00/mi (treadmill 7.5–7.7 mph), no walk breaks. CD 1 mi easy. ~5.5 mi.',
+    Sun: 'Long run + stations — Run 9 mi Z2, final 2.5 mi moderate tempo (8:30–8:45/mi). Stations: sled push 4×50m + sled pull 4×50m @ race weight (crisp maintenance); then 3×20 wall balls.'
+  }
+};
+
+const SANTA_WEEK_2026_04_27 = {
+  weekStart: '2026-04-27',
+  sessions: {
+    Mon: 'Race simulation (W6) — 4 rounds for quality: 1 km @ 7:50–8:00/mi, 15 burpee broad jumps, 20 wall balls; 2 min rest between rounds. Compare 4th vs 1st km split (target under ~10s fade).',
+    Tue: '5 mi easy Z2',
+    Wed: '5–6 mi total w/ 20 min threshold (reduced volume)',
+    Thu: '35–45 min C2 bike aerobic',
+    Fri: '4×1 km intervals',
+    Sat: '7–9 mi long run Z2, last 2 mi fast finish',
+    Sun: '6 rounds: 800m run + 20 lunges'
+  }
+};
+
 const INITIAL_PLAN = [
   { weekStart:'2026-03-16', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 3×8 min @ threshold (2 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'5×1 km intervals, 2 min rest', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'4 rounds: 800m run + 20 burpee broad jumps' }},
   { weekStart:'2026-03-23', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 3×8 min @ threshold (2 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'Kenyan floats: 6 km alternating hard/float', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'5 rounds: 1 km run + 20 wall balls' }},
   { weekStart:'2026-03-30', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 2×12 min @ threshold (3 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'6×1 km intervals, 2 min rest', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'4 rounds: 1 km run + 20 wall balls' }},
   { weekStart:'2026-04-06', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 2×12 min @ threshold (3 min jog)', Thu:'35–45 min C2 bike aerobic', Fri:'Kenyan floats: 7 km alternating hard/float', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'5 rounds: 1 km run + 20 wall balls' }},
-  { weekStart:'2026-04-13', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 20 min continuous threshold', Thu:'35–45 min C2 bike aerobic', Fri:'5×1 km intervals', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'5 rounds: 1 km run + 20 wall balls' }},
-  { weekStart:'2026-04-20', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 25 min continuous threshold', Thu:'35–45 min C2 bike aerobic', Fri:'8 km alternating hard/float', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'Race simulation: 1 km run + 25 burpees ×4' }},
-  { weekStart:'2026-04-27', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 20 min threshold (reduced volume)', Thu:'35–45 min C2 bike aerobic', Fri:'4×1 km intervals', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'6 rounds: 800m run + 20 lunges' }},
+  SANTA_WEEK_2026_04_13,
+  SANTA_WEEK_2026_04_20,
+  SANTA_WEEK_2026_04_27,
   { weekStart:'2026-05-04', sessions:{ Mon:'40 min C2 bike Z1-Z2 (90 rpm, 130–150w)', Tue:'5 mi easy Z2', Wed:'5–6 mi total w/ 20 min threshold (reduced volume)', Thu:'35–45 min C2 bike aerobic', Fri:'3×1 km race-effort repeats', Sat:'7–9 mi long run Z2, last 2 mi fast finish', Sun:'Light simulation: 4 rounds 800m run + 15 burpees' }}
 ];
+
+function maybeApplyPlanSourceSeed() {
+  if ((S.planSourceVersion|0) >= PLAN_SOURCE_VERSION) return;
+  S.planSourceVersion = PLAN_SOURCE_VERSION;
+  S.settings.goals = INITIAL_GOALS_SANTA;
+  S.planWelcome = INITIAL_PLAN_WELCOME_SANTA;
+  function upsertWeek(w) {
+    const copy = JSON.parse(JSON.stringify(w));
+    if (!S.trainingPlan) S.trainingPlan = [];
+    const i = S.trainingPlan.findIndex(x => x.weekStart === copy.weekStart);
+    if (i >= 0) S.trainingPlan[i] = copy;
+    else S.trainingPlan.push(copy);
+  }
+  upsertWeek(SANTA_WEEK_2026_04_13);
+  upsertWeek(SANTA_WEEK_2026_04_20);
+  upsertWeek(SANTA_WEEK_2026_04_27);
+  S.trainingPlan.sort((a,b) => a.weekStart.localeCompare(b.weekStart));
+  save();
+}
 
 function getPlanForDate(d) {
   const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(d+'T12:00:00').getDay()];
@@ -432,6 +505,7 @@ let S = {
   summaries: {},
   trainingPlan: [],
   planWelcome: '',
+  planSourceVersion: 0,
   coachNotes: []
 };
 
@@ -471,8 +545,9 @@ function loadState() {
     INITIAL_PLAN.forEach(w => { if (!existingWeeks.has(w.weekStart)) S.trainingPlan.push(w); });
     S.trainingPlan.sort((a,b) => a.weekStart.localeCompare(b.weekStart));
   } catch(e) {
-    if (!S.trainingPlan || !S.trainingPlan.length) S.trainingPlan = INITIAL_PLAN;
+    if (!S.trainingPlan || !S.trainingPlan.length) S.trainingPlan = JSON.parse(JSON.stringify(INITIAL_PLAN));
   }
+  maybeApplyPlanSourceSeed();
 }
 
 // ─── DATE HELPERS ─────────────────────────────────────────────
