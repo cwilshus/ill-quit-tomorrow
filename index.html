@@ -737,23 +737,6 @@ function buildCoachContext(d) {
   return parts.length ? '\n\nRecent training history:\n'+parts.join('\n') : '';
 }
 
-// ─── PLAN EVOLUTION ──────────────────────────────────────────
-async function evolvePlan() {
-  if (!S.settings.apiKey) { showToast('API key required'); return; }
-  showToast('Coach Santa is reviewing your plan…', 4000);
-  const currentPlan = JSON.stringify((S.trainingPlan||[]).slice(-4));
-  const recentPerf = buildCoachContext(today());
-  const prompt = `You are Coach Santa, a Hyrox coach. Review this athlete's recent performance and evolve their training plan for the next 4 weeks.\n\nAthlete goals: ${S.settings.goals||'Hyrox race June 1 2026'}\n\nRecent performance:\n${recentPerf}\n\nCurrent plan (last 4 weeks):\n${currentPlan}\n\nReturn ONLY a JSON array of 4 week objects: [{weekStart:"YYYY-MM-DD",sessions:{Mon:"...",Tue:"...",Wed:"...",Thu:"...",Fri:"...",Sat:"...",Sun:"..."}}]. Start weekStart from the Monday of next week. Keep the same weekly structure (bike Mon/Thu, easy Tue, threshold Wed, key run Fri, long run Sat, compromised Sun). Adjust intensity and volume based on performance.`;
-  try {
-    const result = await aiJSON(prompt);
-    if (Array.isArray(result) && result.length) {
-      const todayWk = weekStart(today());
-      S.trainingPlan = [...(S.trainingPlan||[]).filter(w=>w.weekStart<todayWk), ...result];
-      save(); renderTrainingPlanContent(); showToast('Plan updated by Coach Santa ✓');
-    } else { showToast('Unexpected response — plan not updated'); }
-  } catch(e) { showToast('Evolution failed: '+e.message); }
-}
-
 function athleteCtx() {
   const wk = currentWeekNum(), tot = totalWeekNum();
   const weekCtx = wk && tot ? `Week ${wk} of ${tot}` : 'Training in progress';
@@ -1147,7 +1130,9 @@ function toggleSessionComplete(d, i) {
   const s = dayLog(d).garmin.sessions[i];
   if (!s) return;
   s.completed = !s.completed;
-  save(); renderTodayContent();
+  save();
+  if (S.tab === 'today') renderTodayContent();
+  if (S.tab === 'training-plan') renderTrainingPlanContent();
 }
 
 function renderTodayContent() {
@@ -2262,21 +2247,38 @@ function renderProgressContent() {
   }, 50);
 }
 
+function weekTargetSummary(week) {
+  const vals = Object.values(week.sessions || {}).filter(Boolean);
+  if (!vals.length) return '—';
+  const t = vals.join(' · ');
+  return t.length > 160 ? t.slice(0, 157) + '…' : t;
+}
+
 // ─── PLAN TAB ─────────────────────────────────────────────────
 function renderBlockView() {
   let html = '';
   const todayStr = today();
   const plan = S.trainingPlan || [];
 
-  if (S.planWelcome) {
-    html += `<div class="card card-accent" style="margin:8px 16px">
-      <div class="card-header" style="margin-bottom:6px"><span class="card-title" style="display:flex;align-items:center;gap:6px">${sparkIcon(12)} Plan Overview</span></div>
-      <div style="font-size:13px;line-height:1.6">${fmtAI(S.planWelcome)}</div>
-    </div>`;
-  }
+  html += `<div class="section-header" style="padding:12px 16px 8px;margin-top:4px">Goals</div>
+  <div class="card" style="margin:0 16px 12px">
+    <div class="input-group" style="margin:0">
+      <textarea class="input" rows="3" placeholder="e.g. Sub-75 Hyrox June 1, 10% body fat…" onblur="S.settings.goals=this.value;save()">${S.settings.goals||''}</textarea>
+    </div>
+  </div>
+
+  <div class="section-header" style="padding:0 16px 8px">This block</div>
+  <div class="card" style="margin:0 16px 12px">
+    <div class="input-group" style="margin:0">
+      <label class="label">Focus &amp; intent</label>
+      <textarea class="input" rows="4" placeholder="What this block is for: volume, limiters, race prep, deloads…" onblur="S.planWelcome=this.value;save()">${S.planWelcome||''}</textarea>
+    </div>
+  </div>
+
+  <div class="section-header" style="padding:0 16px 8px">Weeks</div>`;
 
   if (!plan.length) {
-    html += `<div class="card" style="margin:8px 16px"><div class="text-sm text-muted">No training plan. Tap "Evolve Plan" below to generate one with Coach Santa.</div></div>`;
+    html += `<div class="card" style="margin:0 16px 12px"><div class="text-sm text-muted">No training plan weeks saved yet.</div></div>`;
     return html;
   }
 
@@ -2285,34 +2287,35 @@ function renderBlockView() {
     const isCurrent = week.weekStart === weekStart(todayStr);
     const isPast = week.weekStart < weekStart(todayStr);
     let loggedCount = 0;
-    days.forEach(d => { if (hasGarminSessions(d)||hasSession(d)) loggedCount++; });
+    days.forEach(d => { if (hasGarminSessions(d) || hasSession(d)) loggedCount++; });
 
-    const dayLetters = ['M','T','W','T','F','S','S'];
+    const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const dotsHTML = days.map((d, i) => {
-      const hasLog = hasGarminSessions(d)||hasSession(d);
+      const hasLog = hasGarminSessions(d) || hasSession(d);
       const isToday = d === todayStr;
       const isPastDay = d < todayStr;
-      const bg = hasLog?'var(--green)':isToday?'var(--accent)':isPastDay?'var(--surface2)':'var(--surface2)';
-      const border = hasLog?'2px solid var(--green)':isToday?'2px solid var(--accent)':'1px solid var(--border)';
+      const bg = hasLog ? 'var(--green)' : isToday ? 'var(--accent)' : 'var(--surface2)';
+      const border = hasLog ? '2px solid var(--green)' : isToday ? '2px solid var(--accent)' : '1px solid var(--border)';
       return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
         <div style="width:24px;height:24px;border-radius:50%;background:${bg};border:${border}"></div>
         <span style="font-size:9px;color:var(--muted)">${dayLetters[i]}</span>
       </div>`;
     }).join('');
 
-    html += `<div class="card" style="margin:4px 16px;${isCurrent?'border-color:var(--accent-border)':''}">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    html += `<div class="card" style="margin:4px 16px;${isCurrent ? 'border-color:var(--accent-border)' : ''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:13px;font-weight:700;color:${isCurrent?'var(--accent)':'var(--text)'}">Week ${wi+1}</span>
+          <span style="font-size:13px;font-weight:700;color:${isCurrent ? 'var(--accent)' : 'var(--text)'}">Week ${wi + 1}</span>
           <span style="font-size:11px;color:var(--muted)">${fmtDate(days[0])} – ${fmtDate(days[6])}</span>
-          ${isCurrent?`<span style="font-size:10px;color:var(--accent);font-weight:600;padding:1px 6px;border:1px solid var(--accent-border);border-radius:8px">Now</span>`:''}
+          ${isCurrent ? `<span style="font-size:10px;color:var(--accent);font-weight:600;padding:1px 6px;border:1px solid var(--accent-border);border-radius:8px">Now</span>` : ''}
         </div>
-        ${isPast?`<span style="font-size:11px;color:var(--muted)">${loggedCount}/7</span>`:''}
+        ${isPast ? `<span style="font-size:11px;color:var(--muted)">${loggedCount}/7 logged</span>` : ''}
       </div>
+      <div style="font-size:11px;color:var(--muted2);line-height:1.45;margin-bottom:8px"><span style="font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-size:10px">Week target</span><br>${weekTargetSummary(week)}</div>
       <div style="display:flex;gap:6px;justify-content:space-between">${dotsHTML}</div>
-      ${isCurrent?`<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
-        ${Object.entries(week.sessions).map(([day,s])=>`<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--muted);display:inline-block;width:28px">${day}</span>${s}</div>`).join('')}
-      </div>`:''}
+      ${isCurrent ? `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+        ${Object.entries(week.sessions || {}).map(([day, s]) => s ? `<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--muted);display:inline-block;width:28px">${day}</span>${s}</div>` : '').join('')}
+      </div>` : ''}
     </div>`;
   });
 
@@ -2345,14 +2348,36 @@ function renderSessionsView() {
     const dt = new Date(d+'T12:00:00');
     const dayName = dayNames[dt.getDay()];
     const planned = weekPlan?.sessions?.[dayName.slice(0,3)] || null;
-    const hasLog = hasGarminSessions(d)||hasSession(d);
-    const log = S.logs[d];
+    const log = dayLog(d);
+    const hasLog = hasGarminSessions(d) || hasSession(d);
+    const gSessions = log?.garmin?.sessions || [];
 
     let logSummary = '';
     if (hasGarminSessions(d)) {
       logSummary = log.garmin.sessions.map(s=>[s.tag||s.sessionType,s.manual?.dist?s.manual.dist+' mi':'',s.manual?.pace?'@ '+s.manual.pace+'/mi':''].filter(Boolean).join(' ')).join(' · ');
     } else if (hasSession(d)) {
       logSummary = log.session.workouts.map(w=>w.name).join(', ');
+    }
+
+    let sessionBlock = '';
+    if (gSessions.length) {
+      gSessions.forEach((s, i) => {
+        const done = !!s.completed;
+        const tag = s.tag || s.sessionType || `Session ${i+1}`;
+        const title = tag.toUpperCase();
+        const parts = [s.manual?.dist ? `${s.manual.dist} mi` : '', s.manual?.pace ? `${s.manual.pace}/mi` : ''].filter(Boolean);
+        const meta = parts.join(' · ');
+        sessionBlock += `<div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px">
+          <button type="button" onclick="event.stopPropagation();toggleSessionComplete('${d}',${i})" style="width:22px;height:22px;margin-top:1px;border-radius:50%;border:2px solid ${done?'var(--green)':'var(--red)'};background:${done?'color-mix(in srgb,var(--green) 15%,transparent)':'color-mix(in srgb,var(--red) 10%,transparent)'};cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s">
+            ${done?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`:''}
+          </button>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:var(--text)">${title}${meta?`<span style="font-weight:600;color:var(--muted);margin-left:6px">${meta}</span>`:''}</div>
+          </div>
+        </div>`;
+      });
+    } else if (hasSession(d) && logSummary) {
+      sessionBlock = `<div style="font-size:12px;color:var(--green);margin-top:6px">✓ ${logSummary}</div>`;
     }
 
     const borderLeft = isToday?'border-left:3px solid var(--accent)':hasLog?'border-left:3px solid var(--green)':'border-left:3px solid var(--border)';
@@ -2369,7 +2394,7 @@ function renderSessionsView() {
             ${isToday?`<span style="font-size:10px;color:var(--accent);font-weight:600;padding:1px 5px;border:1px solid var(--accent-border);border-radius:8px">Today</span>`:''}
           </div>
           ${planned?`<div style="font-size:12px;color:${hasLog?'var(--muted)':'var(--text)'};line-height:1.4">${planned}</div>`:''}
-          ${hasLog&&logSummary?`<div style="font-size:12px;color:var(--green);margin-top:3px">✓ ${logSummary}</div>`:''}
+          ${sessionBlock}
           ${!planned&&!hasLog?`<div style="font-size:12px;color:var(--muted)">Rest</div>`:''}
         </div>
         ${isToday&&!hasLog?`<button class="btn btn-secondary btn-sm" onclick="switchTab('plan')" style="flex-shrink:0;font-size:12px;padding:5px 10px">Tell Santa</button>`:''}
@@ -2378,23 +2403,6 @@ function renderSessionsView() {
   });
 
   return html;
-}
-
-async function generatePlanWelcome() {
-  if (!S.settings.apiKey) { showToast('API key required'); return; }
-  showToast('Generating plan overview…', 3000);
-  const plan = (S.trainingPlan||[]).slice(0,4);
-  const prompt = `${athleteCtx()}
-
-Here is the upcoming training plan (next 4 weeks):
-${plan.map((w,i)=>`Week ${i+1} (${w.weekStart}):\n${Object.entries(w.sessions).map(([d,s])=>`  ${d}: ${s}`).join('\n')}`).join('\n\n')}
-
-Write a brief training plan overview (4–6 sentences). Cover: the philosophy behind this block, how it's structured (running volume, strength, GPP), key focus areas and why, and what success looks like at the end of the block. Compare the approach to common alternatives in one sentence. Be specific to this athlete's goals and limiters.`;
-  try {
-    const text = await aiText(prompt);
-    S.planWelcome = text;
-    save(); renderTrainingPlanContent();
-  } catch(e) { showToast('Error: '+e.message); }
 }
 
 // ─── COACH TAB (chat) ─────────────────────────────────────────
@@ -2501,46 +2509,7 @@ function renderTrainingPlanContent() {
       <button class="btn ${_planView==='block'?'btn-primary':'btn-secondary'} btn-sm" onclick="_planView='block';renderTrainingPlanContent()">Block</button>
     </div>
     ${viewHTML}
-
-    <div class="section-header" style="margin-top:8px">Goals</div>
-    <div class="card" style="margin-bottom:4px">
-      <div class="input-group" style="margin:0">
-        <textarea class="input" rows="3" placeholder="e.g. Sub-75 Hyrox June 1, 10% body fat..." onblur="S.settings.goals=this.value;save()">${S.settings.goals||''}</textarea>
-      </div>
-    </div>
-    <div style="padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-secondary btn-sm" onclick="evolvePlan()">${sparkIcon(13)} Evolve Plan</button>
-      ${S.settings.apiKey&&!S.planWelcome?`<button class="btn btn-secondary btn-sm" onclick="generatePlanWelcome()">${sparkIcon(13)} Generate overview</button>`:''}
-    </div>
-
-    <div class="section-header">Program Screenshots</div>
-    <div class="plan-img-grid" id="planImgGrid">
-      ${S.planImgs.map((key,i)=>`
-        <div class="plan-img-thumb">
-          <img src="${S.imgs[key]||''}" onclick="viewImg('${key}')">
-          <button class="plan-img-del" onclick="deletePlanImg(${i})">✕</button>
-        </div>`).join('')}
-      <div class="plan-img-add" onclick="addPlanImg()">
-        <span style="color:var(--accent)">${uploadIcon(22)}</span>
-        <span style="font-size:12px">Add screenshot</span>
-      </div>
-    </div>
   </div></div>`;
-}
-
-function addPlanImg() {
-  pickImg(data=>{
-    const key = 'plan-'+uid();
-    S.imgs[key] = data;
-    S.planImgs.push(key);
-    save(); renderTrainingPlanContent();
-  });
-}
-
-function deletePlanImg(i) {
-  delete S.imgs[S.planImgs[i]];
-  S.planImgs.splice(i,1);
-  save(); renderTrainingPlanContent();
 }
 
 // ─── CHAT → TODAY INTEGRATION ────────────────────────────────
@@ -2615,6 +2584,7 @@ Return exactly {} if this is a general question with no specific training or hea
       save();
       showToast('Saved to Today: ' + added.join(', '));
       if (S.tab==='today') renderTodayContent();
+      if (S.tab==='training-plan') renderTrainingPlanContent();
     }
   } catch(e) { /* silent fail — extraction is best-effort */ }
 }

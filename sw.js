@@ -1,4 +1,4 @@
-const CACHE = 'iqt-v18';
+const CACHE = 'iqt-v19';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
