@@ -37,8 +37,9 @@
   --safe-t: env(safe-area-inset-top, 0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;font-size:15px;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
-#app{max-width:430px;position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;height:100dvh;display:flex;flex-direction:column}
+html{height:100%;height:-webkit-fill-available}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;font-size:15px;min-height:100%;min-height:-webkit-fill-available;min-height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
+#app{max-width:430px;width:100%;margin:0 auto;min-height:100%;min-height:-webkit-fill-available;min-height:100dvh;display:flex;flex-direction:column;background:var(--bg)}
 
 /* TOP BAR */
 .top-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;padding-top:calc(10px + var(--safe-t));background:var(--bg);position:sticky;top:0;z-index:20;border-bottom:1px solid var(--border)}
@@ -57,14 +58,14 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .icon-btn:active{background:var(--border)}
 
 /* MAIN */
-main{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--tab-h) + var(--safe-b) + 12px)}
+main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:16px}
 .tab-panel{display:none;padding:0 0 16px}
 .tab-panel.active{display:block}
 #tab-plan.active{display:flex;flex-direction:column;overflow:hidden;padding:0}
 
-/* BOTTOM NAV */
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:calc(var(--tab-h) + var(--safe-b));padding-bottom:var(--safe-b);background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:20}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--muted);transition:color .15s;font-size:10px;font-weight:500;letter-spacing:0}
+/* BOTTOM NAV (in-flow + sticky like hep-training — avoids transform/fixed viewport gaps on iOS) */
+.bottom-nav{position:sticky;bottom:0;flex-shrink:0;width:100%;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:20;padding-bottom:var(--safe-b)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:var(--tab-h);cursor:pointer;color:var(--muted);transition:color .15s;font-size:10px;font-weight:500;letter-spacing:0}
 .nav-item.active{color:var(--accent)}
 .nav-item svg{width:22px;height:22px;stroke-width:1.8}
 
@@ -215,11 +216,11 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 .shoe-bar-miles{width:55px;text-align:right;color:var(--muted2);font-size:12px}
 
 /* CHAT */
-.chat-area{display:flex;flex-direction:column;gap:10px;padding:12px 16px 80px;min-height:200px;overflow-y:auto;max-height:calc(100dvh - 220px)}
+.chat-area{display:flex;flex-direction:column;gap:10px;padding:12px 16px 80px;min-height:200px;overflow-y:auto;max-height:calc(100svh - 220px)}
 .chat-msg{max-width:85%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.55}
 .chat-msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
 .chat-msg.ai{align-self:flex-start;background:var(--surface2);color:var(--text);border-bottom-left-radius:4px;border:1px solid var(--border)}
-.chat-input-row{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border);align-items:flex-end;position:sticky;bottom:calc(var(--tab-h) + var(--safe-b));background:var(--bg)}
+.chat-input-row{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border);align-items:flex-end;background:var(--bg);flex-shrink:0}
 .chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:10px 14px;color:var(--text);font-size:14px;outline:none;resize:none;max-height:100px;line-height:1.4;font-family:inherit}
 .chat-input:focus{border-color:var(--accent)}
 
@@ -2397,13 +2398,16 @@ Write a brief training plan overview (4–6 sentences). Cover: the philosophy be
 function updatePlanHeight() {
   const el = document.getElementById('tab-plan');
   if (!el || S.tab !== 'plan') return;
+  const mainEl = document.getElementById('main');
   const topBarH = document.getElementById('topBar').offsetHeight || 56;
-  const navH = document.getElementById('bottomNav').offsetHeight || 49;
   const vvH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   const keyboardUp = vvH < (window.innerHeight - 100);
-  el.style.height = (vvH - topBarH - (keyboardUp ? 0 : navH)) + 'px';
+  // Bottom nav is in-flow under main — do not subtract nav from height when keyboard is hidden
+  const h = keyboardUp
+    ? Math.max(200, vvH - topBarH)
+    : (mainEl && mainEl.clientHeight > 0 ? mainEl.clientHeight : Math.max(200, vvH - topBarH - 56));
+  el.style.height = h + 'px';
   // Prevent iOS from leaving #main scrolled when keyboard opens/closes
-  const mainEl = document.getElementById('main');
   if (mainEl) mainEl.scrollTop = 0;
   setTimeout(() => { const ca = document.getElementById('chatArea'); if (ca) ca.scrollTop = ca.scrollHeight; }, 50);
 }
