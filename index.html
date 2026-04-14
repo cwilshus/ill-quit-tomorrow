@@ -37,10 +37,11 @@
   --safe-t: env(safe-area-inset-top, 0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-/* Classic full-height shell (like in-flow PWA shells): height chain + 100vh — not 100svh/dvh on the root */
+/* iOS PWA: in-flow %/vh often leaves a gap above the home indicator — pin #app to the visual viewport */
 html{height:100%;height:-webkit-fill-available}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;font-size:15px;min-height:100%;min-height:-webkit-fill-available;min-height:100vh;height:100%;overflow:hidden;-webkit-font-smoothing:antialiased}
-#app{max-width:430px;width:100%;margin:0 auto;min-height:100%;min-height:-webkit-fill-available;min-height:100vh;height:100%;display:flex;flex-direction:column;background:var(--bg)}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;font-size:15px;min-height:100%;min-height:-webkit-fill-available;min-height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
+/* Fixed column: top+bottom:0 guarantees bottom nav sits on screen bottom; width centers without transform */
+#app{position:fixed;top:0;bottom:0;left:calc(max(0px,100vw - 430px)/2);width:min(430px,100vw);max-width:430px;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
 
 /* TOP BAR */
 .top-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;padding-top:calc(10px + var(--safe-t));background:var(--bg);position:sticky;top:0;z-index:20;border-bottom:1px solid var(--border)}
