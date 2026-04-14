@@ -371,7 +371,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────
 const STORE_KEY = 'iqt_v1';
-const APP_VERSION = '20260414-006';
+const APP_VERSION = '20260415-001';
 const MODEL = 'claude-opus-4-5';
 const WORKOUT_TYPES = ['Monostructural','GPP','Strength','Applied Strength','Gross Conditioning','Extra Credit'];
 const FORMATS = ['AMRAP','For Time','EMOM','Rounds','Duration','For Distance','For Weight','Custom'];
@@ -391,7 +391,7 @@ const SCHEDULE_SESSION_TYPE = {'Compromised Run':'Monostructural','Bike Recovery
 const SCHEDULE_RUN_TYPE = {'Compromised Run':'Easy','Easy Z2 Run':'Easy','Threshold':'Threshold','Key Run':'Tempo','Long Run':'Long'};
 
 /** Bump when Santa canonical block/plan text changes; triggers one-time merge into localStorage. */
-const PLAN_SOURCE_VERSION = 4;
+const PLAN_SOURCE_VERSION = 5;
 
 const INITIAL_GOALS_SANTA = `1. Eliminate the run fade — train holding pace when pre-fatigued (run-after-work, back-half loaded threshold).
 2. Build burpee and wall ball capacity — high-frequency, moderate-volume exposure; muscular endurance + skill.
@@ -412,9 +412,9 @@ const SANTA_WEEK_2026_04_14 = {
   sessions: {
     Mon: 'Recovery — 40 min C2 bike Z1–Z2 @ 90 rpm, 130–150w; 10 min mobility (hips/ankles).',
     Tue: 'Easy run + Strength A — Run: 5 mi easy Z2 (10:30–11:00/mi, HR under 150). Strength: back squat 4×6 @ 165 lb, reverse deficit lunge 3×8/leg @ 95, RDL 3×10 @ 135, dead bug 3×12/side, Pallof 3×10/side, plank 3×45s.',
-    Wed: 'Threshold run — WU 1 mi easy. Main: 4×5 min @ 8.0 mph, 2 min jog (HR cap ~175 set 4). CD 1 mi easy. ~5.5 mi.',
+    Wed: 'Threshold run — Warmup 1 mi easy. Main: 4×5 min @ 8.0 mph, 2 min jog (HR cap ~175 set 4). Cooldown 1 mi easy. ~5.5 mi.',
     Thu: 'Machine threshold — C2 row 4×1000m @ 1:55–2:00/500m, 2 min rest. Then 3×15 wall balls (smooth rhythm, consistent catch); 60s between sets.',
-    Fri: 'Key run intervals — WU 1 mi easy. Main: 5×1 km @ 7:20–7:30/mi, 90s jog. CD 0.5 mi easy. ~5 mi.',
+    Fri: 'Key run intervals — Warmup 1 mi easy. Main: 5×1 km @ 7:20–7:30/mi, 90s jog. Cooldown 0.5 mi easy. ~5 mi.',
     Sat: 'Long run + stations — Run 8 mi Z2, last 2 mi tempo (8:45–9:00/mi). Stations: 5×20 wall balls, 3×8 burpee broad jumps; form over speed, rest as needed.',
     Sun: 'Race simulation (W5) — 5 rounds for quality: 1 km run @ 8:00–8:15/mi, 20 wall balls, 90s rest between rounds. Hold run pace; note fade.'
   }
@@ -425,9 +425,9 @@ const SANTA_WEEK_2026_04_21 = {
   sessions: {
     Mon: 'Recovery — 35 min easy walk or Z1 bike; 15 min mobility (thoracic spine + hip flexors).',
     Tue: 'Easy run + Strength A — Run 5.5 mi Z2. Strength: front squat 4×5 @ 145, walking lunge 3×12/leg @ 95 barbell, SL RDL 3×8/leg @ 40 lb DB, bird dog 3×10/side, side plank 3×30s/side, hollow hold 3×30s.',
-    Wed: 'Threshold run — WU 1 mi easy. Main: 2×10 min @ 8.0 mph, 3 min jog (note if HR exceeds ~178 in back half). CD 1 mi easy. ~6 mi.',
+    Wed: 'Threshold run — Warmup 1 mi easy. Main: 2×10 min @ 8.0 mph, 3 min jog (note if HR exceeds ~178 in back half). Cooldown 1 mi easy. ~6 mi.',
     Thu: 'Machine threshold — SkiErg 5×500m @ 1:45–1:50/500m, 90s rest (breathing, lats). Then 4×10 burpee broad jumps, 90s rest; consistent jump distance.',
-    Fri: 'Key run tempo — WU 1 mi easy. Main: 25 min continuous @ 7:45–8:00/mi (treadmill 7.5–7.7 mph), no walk breaks. CD 1 mi easy. ~5.5 mi.',
+    Fri: 'Key run tempo — Warmup 1 mi easy. Main: 25 min continuous @ 7:45–8:00/mi (treadmill 7.5–7.7 mph), no walk breaks. Cooldown 1 mi easy. ~5.5 mi.',
     Sat: 'Long run + stations — Run 9 mi Z2, final 2.5 mi moderate tempo (8:30–8:45/mi). Stations: sled push 4×50m + sled pull 4×50m @ race weight (crisp maintenance); then 3×20 wall balls.',
     Sun: 'Race simulation (W6) — 4 rounds for quality: 1 km @ 7:50–8:00/mi, 15 burpee broad jumps, 20 wall balls; 2 min rest between rounds. Compare 4th vs 1st km split (target under ~10s fade).'
   }
@@ -490,11 +490,22 @@ function planWeekStartForNav(d) {
   return fut ? fut.weekStart : weekStart(d);
 }
 
+/** Replace run-plan abbreviations for display (read-only; does not change stored JSON). */
+function expandWuCdForDisplay(s) {
+  if (s == null || s === '') return s;
+  return String(s)
+    .replace(/\r\n/g, '\n')
+    .replace(/\bWU\b/gi, 'Warmup')
+    .replace(/\bCD\b/gi, 'Cooldown');
+}
+
 function getPlanForDate(d) {
   const week = findPlanWeekForDate(d);
   if (!week || !week.sessions) return null;
   const key = dowKeyForDate(d);
-  return week.sessions[key] || null;
+  const raw = week.sessions[key];
+  if (!raw) return null;
+  return expandWuCdForDisplay(raw);
 }
 
 function planWeekDaySummaryLines(week) {
@@ -504,7 +515,7 @@ function planWeekDaySummaryLines(week) {
       const k = dowKeyForDate(d);
       const s = week.sessions[k];
       if (!s) return '';
-      return `  ${fmtDay(d)} ${d} (${k}): ${s}`;
+      return `  ${fmtDay(d)} ${d} (${k}): ${expandWuCdForDisplay(s)}`;
     })
     .filter(Boolean)
     .join('\n');
@@ -617,7 +628,7 @@ function splitPlanTitleBody(raw) {
 function expandProseBreaks(s) {
   return String(s || '')
     .replace(/\r\n/g, '\n')
-    .replace(/\.\s+((?:Main|Warmup|Cooldown|Strength|Run|WU|CD)\s*:)/gi, '.\n$1')
+    .replace(/\.\s+((?:Main|Warmup|Cooldown|Strength|Run)\s*:)/gi, '.\n$1')
     .replace(/\.\s+Then\s+/gi, '.\nThen ')
     .replace(/\s+Then\s+/gi, '\nThen ')
     .replace(/;\s+/g, ';\n')
@@ -652,9 +663,9 @@ function formatLiftLine(raw) {
     let per = '';
     if (m[4] && /\/leg/i.test(m[4])) per = ' (per leg)';
     else if (m[4] && /\/side/i.test(m[4])) per = ' (per side)';
-    const wu = m[5] + (m[6] ? ' ' + m[6].toLowerCase() : (!m[6] && /^\d/.test(m[5]) ? ' lb' : ''));
+    const loadStr = m[5] + (m[6] ? ' ' + m[6].toLowerCase() : (!m[6] && /^\d/.test(m[5]) ? ' lb' : ''));
     const rest = (m[7] || '').trim();
-    return `${name} - ${sets} sets x ${reps} reps${per} @ ${wu}${rest ? ' ' + rest : ''}`;
+    return `${name} - ${sets} sets x ${reps} reps${per} @ ${loadStr}${rest ? ' ' + rest : ''}`;
   }
   m = t.match(/^(.+?)\s+(\d+)\s*[×x]\s*(\d+)\s*(\/[^\s]+)?$/i);
   if (m) {
@@ -683,12 +694,12 @@ function splitPlanRunStrengthBlob(afterTitle) {
 }
 
 function formatPlanRunOnlyHtml(runText) {
-  const body = escPlanHtml((runText || '').trim());
+  const body = escPlanHtml((expandWuCdForDisplay(runText) || '').trim());
   return `<div class="session-card-tiered"><div class="session-section-body"><div class="session-line">${body}</div></div></div>`;
 }
 
 function formatPlanStrengthBlockHtml(strengthText) {
-  const parts = (strengthText || '').split(/\s*,\s*/).map(p => p.trim()).filter(Boolean);
+  const parts = (expandWuCdForDisplay(strengthText) || '').split(/\s*,\s*/).map(p => p.trim()).filter(Boolean);
   const lines = parts.map(formatLiftLine).map(line => `<div class="session-line">${escPlanHtml(line)}</div>`).join('');
   return `<div class="session-card-tiered"><div class="session-section-body">${lines}</div></div>`;
 }
@@ -762,6 +773,7 @@ function formatSessionBodyTiered(body) {
 function formatSessionCardHtml(s, opts) {
   opts = opts || {};
   if (!s) return '';
+  s = expandWuCdForDisplay(s);
   const { title, afterTitle, hasSplit } = splitPlanTitleBody(s);
   const showTitle = !opts.omitTitle && (hasSplit ? title : '');
   let html = '<div class="session-card-tiered">';
@@ -1594,7 +1606,7 @@ function renderDayView(d) {
       <div style="flex:1;height:1px;background:var(--border)"></div>
     </div>`;
 
-    if (!sessions.length && planDesc) {
+    if (planDesc) {
       const pb = splitPlanTitleBody(planDesc);
       const rs = pb.hasSplit ? splitPlanRunStrengthBlob(pb.afterTitle) : null;
       const adviceBlock = advice === 'loading'
@@ -1669,34 +1681,38 @@ function renderDayView(d) {
     }
     const workout = (i === 0 && planDesc) ? planDesc : null;
     const strengthOnly = !!(planBodySplit && sessions.length >= 2 && i === 1 && planDesc);
-    const subPreview = strengthOnly
-      ? planPreviewStrengthLine(planBodySplit)
-      : (workout ? (planBodySplit ? planPreviewRunLine(planDesc, planBodySplit) : planPreviewOneLine(workout)) : '');
+    const subPreview = planDesc
+      ? ''
+      : (strengthOnly
+        ? planPreviewStrengthLine(planBodySplit)
+        : (workout ? (planBodySplit ? planPreviewRunLine(planDesc, planBodySplit) : planPreviewOneLine(workout)) : ''));
     const parts = [s.manual?.dist?`${s.manual.dist} mi`:'', s.manual?.pace?`${s.manual.pace}/mi`:''].filter(Boolean);
     const meta = parts.join(' · ');
 
     let expandedContent = '';
     if (exp) {
-      // Workout description (plan for this day)
-      if (workout) {
-        if (planBodySplit && sessions.length >= 2 && i === 0) {
-          expandedContent += `<div style="margin-bottom:16px">${formatPlanRunOnlyHtml(planBodySplit.runText)}</div>`;
-        } else if (planBodySplit && sessions.length >= 2 && i === 1) {
+      // Planned workout is rendered in the EASY RUN / STRENGTH (or Workout) cards above when planDesc exists.
+      if (!planDesc) {
+        if (workout) {
+          if (planBodySplit && sessions.length >= 2 && i === 0) {
+            expandedContent += `<div style="margin-bottom:16px">${formatPlanRunOnlyHtml(planBodySplit.runText)}</div>`;
+          } else if (planBodySplit && sessions.length >= 2 && i === 1) {
+            expandedContent += `<div style="margin-bottom:16px">${formatPlanStrengthBlockHtml(planBodySplit.strengthText)}</div>`;
+          } else if (planBodySplit && sessions.length === 1) {
+            expandedContent += `<div style="margin-bottom:16px">${formatPlanRunOnlyHtml(planBodySplit.runText)}${formatPlanStrengthBlockHtml(planBodySplit.strengthText)}</div>`;
+          } else {
+            expandedContent += `<div style="margin-bottom:16px">${formatSessionCardHtml(workout)}</div>`;
+          }
+        } else if (strengthOnly && planBodySplit) {
           expandedContent += `<div style="margin-bottom:16px">${formatPlanStrengthBlockHtml(planBodySplit.strengthText)}</div>`;
-        } else if (planBodySplit && sessions.length === 1) {
-          expandedContent += `<div style="margin-bottom:16px">${formatPlanRunOnlyHtml(planBodySplit.runText)}${formatPlanStrengthBlockHtml(planBodySplit.strengthText)}</div>`;
-        } else {
-          expandedContent += `<div style="margin-bottom:16px">${formatSessionCardHtml(workout)}</div>`;
         }
-      } else if (strengthOnly && planBodySplit) {
-        expandedContent += `<div style="margin-bottom:16px">${formatPlanStrengthBlockHtml(planBodySplit.strengthText)}</div>`;
-      }
-      if (advice === 'loading') {
-        expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
-      } else if (advice) {
-        expandedContent += `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
-      } else if (isToday && S.settings.apiKey) {
-        expandedContent += `<button class="btn btn-secondary btn-sm" style="margin-top:4px" onclick="event.stopPropagation();getAdvice('${d}')">Get Santa's take</button>`;
+        if (advice === 'loading') {
+          expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
+        } else if (advice) {
+          expandedContent += `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
+        } else if (isToday && S.settings.apiKey) {
+          expandedContent += `<button class="btn btn-secondary btn-sm" style="margin-top:4px" onclick="event.stopPropagation();getAdvice('${d}')">Get Santa's take</button>`;
+        }
       }
       // Session stats
       if (s.manual?.hr) expandedContent += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
@@ -1706,6 +1722,9 @@ function renderDayView(d) {
       if (shoe) expandedContent += `<div class="text-sm text-muted">Shoes: ${shoe.name}</div>`;
       if (s.notes) expandedContent += `<div style="margin-top:6px;font-size:13px;color:var(--text);font-style:italic">${s.notes}</div>`;
       if (s.intervalSets?.length) expandedContent += `<div class="text-sm text-muted" style="margin-top:4px">Intervals: ${s.intervalSets.map(iv=>iv.pace+'/mi').join(', ')}</div>`;
+      if (planDesc && !expandedContent.trim()) {
+        expandedContent += `<div class="text-sm text-muted">Planned workout is in the cards above.</div>`;
+      }
     }
     html += `<div class="card" style="margin-bottom:8px">
       <div style="display:flex;align-items:flex-start;gap:10px">
@@ -2623,7 +2642,7 @@ function renderProgressContent() {
 
 function weekTargetSummary(week) {
   if (!week || !week.sessions) return '—';
-  const vals = getPlanWeekDays(week.weekStart).map(d => week.sessions[dowKeyForDate(d)]).filter(Boolean);
+  const vals = getPlanWeekDays(week.weekStart).map(d => getPlanForDate(d)).filter(Boolean);
   if (!vals.length) return '—';
   const t = vals.join(' · ');
   return t.length > 160 ? t.slice(0, 157) + '…' : t;
@@ -2690,8 +2709,7 @@ function renderBlockView() {
       <div style="display:flex;gap:6px;justify-content:space-between">${dotsHTML}</div>
       ${isCurrent ? `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
         ${getPlanWeekDays(week.weekStart).map(d => {
-          const k = dowKeyForDate(d);
-          const s = week.sessions?.[k];
+          const s = getPlanForDate(d);
           if (!s) return '';
           return `<div style="margin-bottom:10px;line-height:1.45"><div style="font-weight:700;color:var(--muted);margin-bottom:3px;font-size:12px">${fmtDay(d)} ${fmtDate(d)}</div>${formatSessionCardHtml(s)}</div>`;
         }).join('')}
@@ -2723,7 +2741,7 @@ function renderSessionsView() {
 
   days.forEach(d => {
     const isToday = d === todayStr;
-    const planned = weekPlan?.sessions?.[dowKeyForDate(d)] || null;
+    const planned = getPlanForDate(d);
     const log = dayLog(d);
     const hasLog = hasGarminSessions(d) || hasSession(d);
     const gSessions = log?.garmin?.sessions || [];
