@@ -1037,7 +1037,17 @@ async function generateWeeklySnapshot(date) {
 Last 7 days training log:
 ${lines.join('\n')||'No data logged yet.'}
 
-Give a concise weekly performance snapshot (4–6 sentences). Cover: training consistency, recovery quality, what's working, one specific thing to adjust next week. Be direct and data-driven — no generic encouragement.`;
+Write a weekly performance snapshot. Use exactly this format — each section on its own line with a blank line between them:
+
+**Training Consistency:** [1–2 sentences on sessions completed vs planned, volume]
+
+**Recovery Quality:** [1–2 sentences on HRV, sleep, readiness trends]
+
+**What's Working:** [1 sentence]
+
+**Next Week:** [1 specific adjustment]
+
+Be direct and data-driven. No generic encouragement. No intro sentence before the first section.`;
   try {
     const text = await aiText(prompt);
     S.summaries[key] = text;
@@ -1080,7 +1090,17 @@ async function generateCoachSummary() {
 Last 7 days training log:
 ${lines.join('\n')||'No data logged yet.'}
 
-Give a concise weekly performance snapshot (4–6 sentences). Cover: training consistency, recovery quality, what's working, one specific thing to adjust next week. Be direct and data-driven — no generic encouragement.`;
+Write a weekly performance snapshot. Use exactly this format — each section on its own line with a blank line between them:
+
+**Training Consistency:** [1–2 sentences on sessions completed vs planned, volume]
+
+**Recovery Quality:** [1–2 sentences on HRV, sleep, readiness trends]
+
+**What's Working:** [1 sentence]
+
+**Next Week:** [1 specific adjustment]
+
+Be direct and data-driven. No generic encouragement. No intro sentence before the first section.`;
   try {
     const text = await aiText(prompt);
     S.summaries[key] = text;
@@ -1238,8 +1258,11 @@ function renderDayView(d) {
   if (wkSum) {
     html += `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('weekly')">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span class="card-title" style="display:flex;align-items:center;gap:6px">${sparkIcon(12)} Weekly Summary</span>
-        <span style="font-size:16px;color:var(--muted);line-height:1">${expWeekly?'⌃':'⌄'}</span>
+        <span class="card-title" style="display:flex;align-items:center;gap:6px">Weekly Summary <img src="${SANTA_ICON_64}" width="14" height="14" style="border-radius:2px;opacity:0.85"></span>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${wkSum!=='loading'?`<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 0;opacity:0.6" onclick="event.stopPropagation();delete S.summaries['${wkKey}'];save();generateCoachSummary()">↺</button>`:''}
+          <span style="font-size:16px;color:var(--muted);line-height:1">${expWeekly?'⌃':'⌄'}</span>
+        </div>
       </div>
       ${expWeekly?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
         ${wkSum==='loading'?`<div class="advice-loading"><div class="spinner"></div> Generating…</div>`:`<div style="font-size:13px;line-height:1.6">${fmtAI(wkSum)}</div>`}
@@ -1267,7 +1290,7 @@ function renderDayView(d) {
       if (advice === 'loading') {
         expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
       } else if (advice) {
-        expandedContent += `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em">Santa says</span><button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 0;opacity:0.6" onclick="event.stopPropagation();delete S.summaries['${d}-advice'];save();renderTodayContent()">↺ Refresh</button></div><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
+        expandedContent += `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px"><img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"> Santa says</span><button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 0;opacity:0.6" onclick="event.stopPropagation();delete S.summaries['${d}-advice'];save();renderTodayContent()">↺ Refresh</button></div><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
       }
       // Session stats
       if (s.manual?.hr) expandedContent += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
