@@ -447,8 +447,14 @@ function loadState() {
         if (confirm('No local data found. Restore from Gist backup?')) restoreFromGist();
       }, 800);
     }
+    // Merge any INITIAL_PLAN weeks missing from saved plan (handles old localStorage with partial data)
+    if (!S.trainingPlan) S.trainingPlan = [];
+    const existingWeeks = new Set(S.trainingPlan.map(w => w.weekStart));
+    INITIAL_PLAN.forEach(w => { if (!existingWeeks.has(w.weekStart)) S.trainingPlan.push(w); });
+    S.trainingPlan.sort((a,b) => a.weekStart.localeCompare(b.weekStart));
+  } catch(e) {
     if (!S.trainingPlan || !S.trainingPlan.length) S.trainingPlan = INITIAL_PLAN;
-  } catch(e) { if (!S.trainingPlan || !S.trainingPlan.length) S.trainingPlan = INITIAL_PLAN; }
+  }
 }
 
 // ─── DATE HELPERS ─────────────────────────────────────────────
