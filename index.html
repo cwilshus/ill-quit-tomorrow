@@ -199,8 +199,8 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 .session-card-body{font-size:13px;line-height:1.55;color:var(--text)}
 .session-card-tiered{font-size:13px;line-height:1.55;color:var(--text)}
 .session-card-tiered .session-card-title{font-size:15px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:8px}
-.session-card-tiered .session-section{margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
-.session-card-tiered .session-section:first-child{margin-top:0;padding-top:0;border-top:none}
+.session-card-tiered .session-section{margin-top:14px;padding-top:0;border-top:none}
+.session-card-tiered .session-section:first-child{margin-top:0}
 .session-card-tiered .session-section-label{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
 .session-card-tiered .session-section-body{color:var(--text)}
 .session-card-tiered .session-line{margin:3px 0;padding-left:0}
@@ -371,7 +371,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────
 const STORE_KEY = 'iqt_v1';
-const APP_VERSION = '20260414-003';
+const APP_VERSION = '20260414-004';
 const MODEL = 'claude-opus-4-5';
 const WORKOUT_TYPES = ['Monostructural','GPP','Strength','Applied Strength','Gross Conditioning','Extra Credit'];
 const FORMATS = ['AMRAP','For Time','EMOM','Rounds','Duration','For Distance','For Weight','Custom'];
@@ -622,6 +622,89 @@ function expandProseBreaks(s) {
     .replace(/\s+Then\s+/gi, '\nThen ')
     .replace(/;\s+/g, ';\n')
     .replace(/,\s+(?=\d)/g, ',\n');
+}
+
+function titleCaseExerciseToken(str) {
+  const w = str.trim().split(/\s+/);
+  return w.map(x => {
+    const u = x.toUpperCase();
+    if (/^(RDL|SL|DB|BW)$/i.test(x)) return u;
+    return x.charAt(0).toUpperCase() + x.slice(1).toLowerCase();
+  }).join(' ');
+}
+
+/**
+ * "back squat 4×6 @ 165 lb" -> "Back Squat - 4 sets x 6 reps @ 165 lb"
+ * Handles /leg, /side, plank 3×45s, lines without @.
+ */
+function formatLiftLine(raw) {
+  const t = raw.trim().replace(/,$/, '');
+  if (!t) return '';
+  let m = t.match(/^(.+?)\s+(\d+)\s*[×x]\s*(\d+)\s*s$/i);
+  if (m && /plank|hollow|hold/i.test(m[1])) {
+    return `${titleCaseExerciseToken(m[1])} - ${m[2]} sets for ${m[3]} seconds`;
+  }
+  m = t.match(/^(.+?)\s+(\d+)\s*[×x]\s*(\d+)\s*(\/[^\s@]+)?\s*@\s*([\d.]+)\s*(lb|kg)?(.*)$/i);
+  if (m) {
+    const name = titleCaseExerciseToken(m[1].trim());
+    const sets = m[2];
+    const reps = m[3];
+    let per = '';
+    if (m[4] && /\/leg/i.test(m[4])) per = ' (per leg)';
+    else if (m[4] && /\/side/i.test(m[4])) per = ' (per side)';
+    const wu = m[5] + (m[6] ? ' ' + m[6].toLowerCase() : (!m[6] && /^\d/.test(m[5]) ? ' lb' : ''));
+    const rest = (m[7] || '').trim();
+    return `${name} - ${sets} sets x ${reps} reps${per} @ ${wu}${rest ? ' ' + rest : ''}`;
+  }
+  m = t.match(/^(.+?)\s+(\d+)\s*[×x]\s*(\d+)\s*(\/[^\s]+)?$/i);
+  if (m) {
+    const name = titleCaseExerciseToken(m[1].trim());
+    let per = '';
+    if (m[4] && /\/leg/i.test(m[4])) per = ' (per leg)';
+    else if (m[4] && /\/side/i.test(m[4])) per = ' (per side)';
+    return `${name} - ${m[2]} sets x ${m[3]} reps${per}`;
+  }
+  return titleCaseExerciseToken(t);
+}
+
+/** When plan body has "…Run:… Strength:…", return split strings for two-card layout. */
+function splitPlanRunStrengthBlob(afterTitle) {
+  if (!afterTitle || typeof afterTitle !== 'string') return null;
+  const t = afterTitle.trim();
+  const idx = t.search(/\bStrength\s*:/i);
+  if (idx < 0) return null;
+  let left = t.slice(0, idx).replace(/\s+\.\s*$/, '').trim();
+  const right = t.slice(idx).replace(/^\s*Strength\s*:\s*/i, '').trim();
+  if (!right) return null;
+  const runStripped = left.replace(/^\s*Run\s*:\s*/i, '').trim();
+  const runText = runStripped || left;
+  if (!/\b(mi|mph|run|easy|z2|threshold|warmup|wu|cd|jog|tread)\b/i.test(runText + left)) return null;
+  return { runText, strengthText: right };
+}
+
+function formatPlanRunOnlyHtml(runText) {
+  const body = escPlanHtml((runText || '').trim());
+  return `<div class="session-card-tiered"><div class="session-section"><div class="session-section-label">RUN</div><div class="session-section-body"><div class="session-line">${body}</div></div></div></div>`;
+}
+
+function formatPlanStrengthBlockHtml(strengthText) {
+  const parts = (strengthText || '').split(/\s*,\s*/).map(p => p.trim()).filter(Boolean);
+  const lines = parts.map(formatLiftLine).map(line => `<div class="session-line">${escPlanHtml(line)}</div>`).join('');
+  return `<div class="session-card-tiered"><div class="session-section"><div class="session-section-label">STRENGTH</div><div class="session-section-body">${lines}</div></div></div>`;
+}
+
+function planPreviewRunLine(planDesc, rs) {
+  if (rs && rs.runText) {
+    const flat = rs.runText.replace(/\s+/g, ' ').trim();
+    return flat.length > 110 ? flat.slice(0, 107) + '…' : flat;
+  }
+  return planDesc ? planPreviewOneLine(planDesc) : '';
+}
+
+function planPreviewStrengthLine(rs) {
+  if (!rs || !rs.strengthText) return '';
+  const flat = rs.strengthText.replace(/\s+/g, ' ').trim();
+  return flat.length > 110 ? flat.slice(0, 107) + '…' : flat;
 }
 
 function formatSessionLineHtml(line) {
@@ -1512,37 +1595,89 @@ function renderDayView(d) {
     </div>`;
 
     if (!sessions.length && planDesc) {
-      const pk = 'p' + d.replace(/-/g, '');
-      const expP = _todayExp.has(pk);
-      const head = (planDesc.split(/\s*—\s*/)[0] || 'Workout').trim();
-      const headDisp = head.length > 36 ? head.slice(0, 33) + '…' : head;
-      html += `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('${pk}')">
+      const pb = splitPlanTitleBody(planDesc);
+      const rs = pb.hasSplit ? splitPlanRunStrengthBlob(pb.afterTitle) : null;
+      const adviceBlock = advice === 'loading'
+        ? `<div class="advice-loading" style="margin-top:10px"><div class="spinner"></div></div>`
+        : advice
+          ? `<div style="margin-top:10px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`
+          : (isToday && S.settings.apiKey ? `<button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="event.stopPropagation();getAdvice('${d}')">Get Santa's take</button>` : '');
+      if (rs) {
+        const pkR = 'pr' + d.replace(/-/g, '');
+        const pkS = 'ps' + d.replace(/-/g, '');
+        const expR = _todayExp.has(pkR);
+        const expS = _todayExp.has(pkS);
+        const anyExp = expR || expS;
+        const runCard = `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('${pkR}')">
         <div style="display:flex;align-items:flex-start;gap:10px">
           <div style="width:22px;height:22px;margin-top:1px;border-radius:50%;border:2px solid var(--border);flex-shrink:0"></div>
           <div style="flex:1;min-width:0">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:13px;font-weight:700;color:var(--text)">${escPlanHtml(headDisp)}</span>
-              <span style="font-size:16px;color:var(--muted);line-height:1;margin-left:8px;flex-shrink:0">${expP ? '⌃' : '⌄'}</span>
+              <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.04em">EASY RUN</span>
+              <span style="font-size:16px;color:var(--muted);line-height:1;flex-shrink:0">${expR ? '⌃' : '⌄'}</span>
             </div>
-            ${!expP ? `<div style="font-size:12px;color:var(--muted2);margin-top:3px;line-height:1.45">${escPlanHtml(planPreviewOneLine(planDesc))}</div>` : ''}
+            ${!expR ? `<div style="font-size:12px;color:var(--muted2);margin-top:4px;line-height:1.45">${escPlanHtml(planPreviewRunLine(planDesc, rs))}</div>` : ''}
+          </div>
+        </div>
+        ${expR ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">${formatPlanRunOnlyHtml(rs.runText)}</div>` : ''}
+      </div>`;
+        const strCard = `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('${pkS}')">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <div style="width:22px;height:22px;margin-top:1px;border-radius:50%;border:2px solid var(--border);flex-shrink:0"></div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.04em">STRENGTH</span>
+              <span style="font-size:16px;color:var(--muted);line-height:1;flex-shrink:0">${expS ? '⌃' : '⌄'}</span>
+            </div>
+            ${!expS ? `<div style="font-size:12px;color:var(--muted2);margin-top:4px;line-height:1.45">${escPlanHtml(planPreviewStrengthLine(rs))}</div>` : ''}
+          </div>
+        </div>
+        ${expS ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">${formatPlanStrengthBlockHtml(rs.strengthText)}</div>` : ''}
+      </div>`;
+        html += runCard + strCard;
+        if (anyExp && adviceBlock) {
+          html += `<div class="card" style="margin-bottom:8px" onclick="event.stopPropagation()">${adviceBlock}</div>`;
+        }
+      } else {
+        const pk = 'p' + d.replace(/-/g, '');
+        const expP = _todayExp.has(pk);
+        html += `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('${pk}')">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <div style="width:22px;height:22px;margin-top:1px;border-radius:50%;border:2px solid var(--border);flex-shrink:0"></div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+              <div style="flex:1;font-size:13px;color:var(--muted2);line-height:1.45;min-width:0">${escPlanHtml(planPreviewOneLine(planDesc))}</div>
+              <span style="font-size:16px;color:var(--muted);line-height:1;flex-shrink:0;padding-top:1px">${expP ? '⌃' : '⌄'}</span>
+            </div>
           </div>
         </div>
         ${expP ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
           ${formatSessionCardHtml(planDesc, { omitTitle: true })}
-          ${advice === 'loading' ? `<div class="advice-loading" style="margin-top:10px"><div class="spinner"></div></div>` : advice ? `<div style="margin-top:10px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>` : (isToday && S.settings.apiKey ? `<button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="event.stopPropagation();getAdvice('${d}')">Get Santa's take</button>` : '')}
+          ${adviceBlock}
         </div>` : ''}
       </div>`;
+      }
     }
   }
+
+  const _pbSess = planDesc ? splitPlanTitleBody(planDesc) : null;
+  const planBodySplit = _pbSess && _pbSess.hasSplit ? splitPlanRunStrengthBlob(_pbSess.afterTitle) : null;
 
   sessions.forEach((s, i) => {
     const key = `sg${i}`;
     const exp = _todayExp.has(key);
     const done = !!s.completed;
     const tag = s.tag || s.sessionType || `Session ${i+1}`;
-    const title = tag.toUpperCase();
-    // Show plan description as workout subtitle for first session
+    let title = tag.toUpperCase();
+    if (planBodySplit && planDesc) {
+      if (i === 0) title = 'EASY RUN';
+      else if (i === 1 && sessions.length >= 2) title = 'STRENGTH';
+    }
     const workout = (i === 0 && planDesc) ? planDesc : null;
+    const strengthOnly = !!(planBodySplit && sessions.length >= 2 && i === 1 && planDesc);
+    const subPreview = strengthOnly
+      ? planPreviewStrengthLine(planBodySplit)
+      : (workout ? (planBodySplit ? planPreviewRunLine(planDesc, planBodySplit) : planPreviewOneLine(workout)) : '');
     const parts = [s.manual?.dist?`${s.manual.dist} mi`:'', s.manual?.pace?`${s.manual.pace}/mi`:''].filter(Boolean);
     const meta = parts.join(' · ');
 
@@ -1550,13 +1685,25 @@ function renderDayView(d) {
     if (exp) {
       // Workout description (plan for this day)
       if (workout) {
-        expandedContent += `<div style="margin-bottom:16px">${formatSessionCardHtml(workout)}</div>`;
+        if (planBodySplit && sessions.length >= 2 && i === 0) {
+          expandedContent += `<div style="margin-bottom:16px">${formatPlanRunOnlyHtml(planBodySplit.runText)}</div>`;
+        } else if (planBodySplit && sessions.length >= 2 && i === 1) {
+          expandedContent += `<div style="margin-bottom:16px">${formatPlanStrengthBlockHtml(planBodySplit.strengthText)}</div>`;
+        } else if (planBodySplit && sessions.length === 1) {
+          expandedContent += `<div style="margin-bottom:16px">${formatPlanRunOnlyHtml(planBodySplit.runText)}${formatPlanStrengthBlockHtml(planBodySplit.strengthText)}</div>`;
+        } else {
+          expandedContent += `<div style="margin-bottom:16px">${formatSessionCardHtml(workout)}</div>`;
+        }
+      } else if (strengthOnly && planBodySplit) {
+        expandedContent += `<div style="margin-bottom:16px">${formatPlanStrengthBlockHtml(planBodySplit.strengthText)}</div>`;
       }
-      // Santa says brief
-      if (advice === 'loading') {
-        expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
-      } else if (advice) {
-        expandedContent += `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
+      // Santa says brief (first row only so two expanded sessions do not duplicate)
+      if (i === 0) {
+        if (advice === 'loading') {
+          expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
+        } else if (advice) {
+          expandedContent += `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
+        }
       }
       // Session stats
       if (s.manual?.hr) expandedContent += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
@@ -1580,7 +1727,7 @@ function renderDayView(d) {
             </div>
             <span style="font-size:16px;color:var(--muted);line-height:1;margin-left:8px;flex-shrink:0">${exp?'⌃':'⌄'}</span>
           </div>
-          ${workout?`<div style="font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.45">${escPlanHtml(planPreviewOneLine(workout))}</div>`:''}
+          ${(workout || strengthOnly) && subPreview ? `<div style="font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.45">${escPlanHtml(subPreview)}</div>` : ''}
         </div>
       </div>
       ${expandedContent?`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">${expandedContent}</div>`:''}
