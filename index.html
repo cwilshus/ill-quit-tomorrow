@@ -371,7 +371,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────
 const STORE_KEY = 'iqt_v1';
-const APP_VERSION = '20260415-001';
+const APP_VERSION = '20260416-001';
 const MODEL = 'claude-opus-4-5';
 const WORKOUT_TYPES = ['Monostructural','GPP','Strength','Applied Strength','Gross Conditioning','Extra Credit'];
 const FORMATS = ['AMRAP','For Time','EMOM','Rounds','Duration','For Distance','For Weight','Custom'];
@@ -1610,10 +1610,10 @@ function renderDayView(d) {
       const pb = splitPlanTitleBody(planDesc);
       const rs = pb.hasSplit ? splitPlanRunStrengthBlob(pb.afterTitle) : null;
       const adviceBlock = advice === 'loading'
-        ? `<div class="advice-loading" style="margin-top:10px"><div class="spinner"></div></div>`
+        ? `<div class="advice-loading" style="margin-top:20px"><div class="spinner"></div></div>`
         : advice
-          ? `<div style="margin-top:10px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`
-          : (isToday && S.settings.apiKey ? `<button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="event.stopPropagation();getAdvice('${d}')">Get Santa's take</button>` : '');
+          ? `<div style="margin-top:20px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`
+          : (isToday && S.settings.apiKey ? `<button class="btn btn-secondary btn-sm" style="margin-top:20px" onclick="event.stopPropagation();getAdvice('${d}')">Get Santa's take</button>` : '');
       if (rs) {
         const pkR = 'pr' + d.replace(/-/g, '');
         const pkS = 'ps' + d.replace(/-/g, '');
@@ -1707,11 +1707,11 @@ function renderDayView(d) {
           expandedContent += `<div style="margin-bottom:16px">${formatPlanStrengthBlockHtml(planBodySplit.strengthText)}</div>`;
         }
         if (advice === 'loading') {
-          expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
+          expandedContent += `<div class="advice-loading" style="margin-top:20px"><div class="spinner"></div></div>`;
         } else if (advice) {
-          expandedContent += `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
+          expandedContent += `<div style="margin-top:20px;margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
         } else if (isToday && S.settings.apiKey) {
-          expandedContent += `<button class="btn btn-secondary btn-sm" style="margin-top:4px" onclick="event.stopPropagation();getAdvice('${d}')">Get Santa's take</button>`;
+          expandedContent += `<button class="btn btn-secondary btn-sm" style="margin-top:20px" onclick="event.stopPropagation();getAdvice('${d}')">Get Santa's take</button>`;
         }
       }
       // Session stats
