@@ -1005,7 +1005,7 @@ async function getAdvice(date) {
 
 Today is ${fmtDay(date)} ${date}. Today's planned session: ${planSession}.
 
-In 2–3 sentences: give the key coaching cue for this session — specific effort level, pacing target, or execution focus based on today's readiness and recent training. No generic encouragement. If readiness is compromised, address that directly and say what to modify.`;
+In 2–3 sentences: give the key coaching cue for this session — specific effort level, pacing target, or execution focus based on today's readiness and recent training. No generic encouragement. If readiness is compromised, address that directly and say what to modify. Start directly with the coaching note — no header, label, or title.`;
   try {
     const text = await aiText(prompt);
     S.summaries[date+'-advice'] = text;
@@ -1267,7 +1267,7 @@ function renderDayView(d) {
       if (advice === 'loading') {
         expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
       } else if (advice) {
-        expandedContent += `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em">Santa says</span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
+        expandedContent += `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em">Santa says</span><button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 0;opacity:0.6" onclick="event.stopPropagation();delete S.summaries['${d}-advice'];save();renderTodayContent()">↺ Refresh</button></div><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
       }
       // Session stats
       if (s.manual?.hr) expandedContent += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
