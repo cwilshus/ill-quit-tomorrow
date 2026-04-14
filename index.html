@@ -1919,8 +1919,7 @@ function renderTopBar() {
     'Low':      { label:'LOW',      color:'#F97316' },
     'Poor':     { label:'POOR',     color:'var(--red)' },
   };
-  const HRV_TR = { green:'High', yellow:'Moderate', red:'Poor' };
-  const rl = m.readinessLabel || HRV_TR[m.hrv] || '';
+  const rl = m.readinessLabel || '';
   const trEntry = TR_MAP[rl];
   const trHtml = trEntry ? `<span style="font-size:10px;font-weight:800;letter-spacing:0.05em;color:${trEntry.color};border:1px solid ${trEntry.color};border-radius:4px;padding:2px 6px">${trEntry.label}</span>` : '';
   document.getElementById('topBar').innerHTML = `
