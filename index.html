@@ -32,7 +32,7 @@
   --cream-border: rgba(255,240,184,0.25);
   --radius: 12px;
   --radius-sm: 8px;
-  --tab-h: 60px;
+  --tab-h: 49px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
 }
@@ -353,7 +353,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────
 const STORE_KEY = 'iqt_v1';
-const APP_VERSION = '20260413-006';
+const APP_VERSION = '20260413-007';
 const MODEL = 'claude-opus-4-5';
 const WORKOUT_TYPES = ['Monostructural','GPP','Strength','Applied Strength','Gross Conditioning','Extra Credit'];
 const FORMATS = ['AMRAP','For Time','EMOM','Rounds','Duration','For Distance','For Weight','Custom'];
@@ -2394,13 +2394,23 @@ Write a brief training plan overview (4–6 sentences). Cover: the philosophy be
 }
 
 // ─── COACH TAB (chat) ─────────────────────────────────────────
+function updatePlanHeight() {
+  const el = document.getElementById('tab-plan');
+  if (!el || S.tab !== 'plan') return;
+  const topBarH = document.getElementById('topBar').offsetHeight || 56;
+  const navH = document.getElementById('bottomNav').offsetHeight || 49;
+  const vvH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const keyboardUp = vvH < (window.innerHeight - 100);
+  el.style.height = (vvH - topBarH - (keyboardUp ? 0 : navH)) + 'px';
+  if (keyboardUp) {
+    setTimeout(() => { const ca = document.getElementById('chatArea'); if (ca) ca.scrollTop = ca.scrollHeight; }, 50);
+  }
+}
+
 function renderPlanContent() {
   const el = document.getElementById('tab-plan');
 
-  // Exact-fit height: fills viewport minus top bar and bottom nav, no dead space
-  const topBarH = document.getElementById('topBar').offsetHeight || 56;
-  const navH = document.getElementById('bottomNav').offsetHeight || 60;
-  el.style.height = (window.innerHeight - topBarH - navH) + 'px';
+  updatePlanHeight();
 
   const msgs = S.chatHistory.map(m=>`
     <div class="chat-msg ${m.role==='user'?'user':'ai'}">${m.role==='user'?m.content.replace(/\n/g,'<br>'):fmtAI(m.content)}</div>
@@ -2873,6 +2883,10 @@ if ('serviceWorker' in navigator) {
 
 loadState();
 render();
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', updatePlanHeight);
+}
 
 </script>
 </body>
