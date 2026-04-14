@@ -1259,10 +1259,7 @@ function renderDayView(d) {
     html += `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('weekly')">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span class="card-title" style="display:flex;align-items:center;gap:6px">Weekly Summary <img src="${SANTA_ICON_64}" width="14" height="14" style="border-radius:2px;opacity:0.85"></span>
-        <div style="display:flex;align-items:center;gap:8px">
-          ${wkSum!=='loading'?`<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 0;opacity:0.6" onclick="event.stopPropagation();delete S.summaries['${wkKey}'];save();generateCoachSummary()">↺</button>`:''}
-          <span style="font-size:16px;color:var(--muted);line-height:1">${expWeekly?'⌃':'⌄'}</span>
-        </div>
+        <span style="font-size:16px;color:var(--muted);line-height:1">${expWeekly?'⌃':'⌄'}</span>
       </div>
       ${expWeekly?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
         ${wkSum==='loading'?`<div class="advice-loading"><div class="spinner"></div> Generating…</div>`:`<div style="font-size:13px;line-height:1.6">${fmtAI(wkSum)}</div>`}
