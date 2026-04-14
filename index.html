@@ -58,13 +58,13 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .icon-btn{width:34px;height:34px;background:var(--surface2);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0;transition:background .15s}
 .icon-btn:active{background:var(--border)}
 
-/* MAIN — each tab fills the same flex slot (flex:1); scroll only inside .tab-scroll (or #tab-plan chat column) */
+/* MAIN — each tab fills the same flex slot; scroll only inside .tab-page-shell > .tab-scroll or .chat-area (+ Santa composer) */
 main{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
 .tab-panel{display:none;padding:0 0 16px}
 .tab-panel.active{display:block}
 /* flex: 1 1 0% + min-height:0 — avoids flex min-content growth so scroll stays inside one child (iMessage-style chat) */
-#tab-today.active,#tab-progress.active,#tab-training-plan.active,#tab-plan.active{display:flex;flex-direction:column;flex:1 1 0%;min-height:0;overflow:hidden;padding:0}
-.tab-scroll{flex:1 1 0%;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:16px;-webkit-overflow-scrolling:touch}
+#tab-today.active,#tab-progress.active,#tab-training-plan.active,#tab-plan.active,#tab-log.active,#tab-health.active{display:flex;flex-direction:column;flex:1 1 0%;min-height:0;overflow:hidden;padding:0}
+.tab-scroll{flex:1 1 0%;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:16px;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
 
 /* BOTTOM NAV — last flex child of #app (in-flow footer, no sticky/fixed) */
 .bottom-nav{flex-shrink:0;width:100%;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:20;padding-bottom:var(--safe-b)}
@@ -218,8 +218,9 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 .shoe-bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .4s}
 .shoe-bar-miles{width:55px;text-align:right;color:var(--muted2);font-size:12px}
 
-/* CHAT — iMessage-style: only #chatArea scrolls; composer stays at bottom of main (above app tab bar) */
-.plan-chat-shell{flex:1 1 0%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+/* Every tab: tab-page-shell fills main; only inner .tab-scroll or .chat-area scrolls (fixed chrome above bottom nav) */
+.tab-page-shell{flex:1 1 0%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.tab-page-shell > .sub-tabs{flex-shrink:0}
 .chat-area{display:flex;flex-direction:column;gap:10px;padding:12px 16px 20px;flex:1 1 0%;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
 .chat-msg{max-width:85%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.55}
 .chat-msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
@@ -1175,7 +1176,7 @@ function renderTodayContent() {
       <button class="week-nav-btn" onclick="S.weekOffset++;renderTodayContent()" ${S.weekOffset>=0?'style="color:var(--muted)"':''}>›</button>
     </div>`;
 
-  el.innerHTML = `<div class="tab-scroll">${stripHTML}${renderDayView(S.selDate)}</div>`;
+  el.innerHTML = `<div class="tab-page-shell"><div class="tab-scroll">${stripHTML}${renderDayView(S.selDate)}</div></div>`;
 
   // Auto-generate Training Brief on first open (no readiness required)
   if (S.selDate === todayStr && !S.summaries[todayStr+'-advice'] && S.settings.apiKey) {
@@ -1385,7 +1386,7 @@ function renderHealthContent() {
 
   const hClass = (v) => v==='green'?'hrv-opt sel-green':v==='yellow'?'hrv-opt sel-yellow':v==='red'?'hrv-opt sel-red':'hrv-opt';
 
-  el.innerHTML = `
+  el.innerHTML = `<div class="tab-page-shell"><div class="tab-scroll">
     <div class="section-header">Morning Check-In · ${fmtDate(d)}</div>
 
     <div class="card">
@@ -1466,7 +1467,7 @@ function renderHealthContent() {
         ${m.sleepAiSummary?`<div style="padding:12px;background:var(--cream-dim);border:1px solid var(--cream-border);border-radius:8px;font-size:13px;line-height:1.6">${fmtAI(m.sleepAiSummary)}</div>`:''}
       </div>`;
     })()}
-  `;
+  </div></div>`;
 }
 
 function setMorningHRV(val) {
@@ -1543,7 +1544,7 @@ function renderLogContent() {
   if (S.logSubTab==='garmin') body = renderLogGarmin();
   else if (S.logSubTab==='strength') body = renderLogStrength();
   else if (S.logSubTab==='nutrition') body = renderLogNutrition();
-  el.innerHTML = subNav + body;
+  el.innerHTML = `<div class="tab-page-shell">${subNav}<div class="tab-scroll">${body}</div></div>`;
 }
 
 function renderLogStrength() {
@@ -2152,7 +2153,7 @@ function renderProgressContent() {
 
   function chartPlaceholder(msg) { return `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px">${msg}</div>`; }
 
-  el.innerHTML = `<div class="tab-scroll">
+  el.innerHTML = `<div class="tab-page-shell"><div class="tab-scroll">
     <div class="section-header">Trends</div>
     <div class="view-toggle" style="margin-bottom:0">
       <button class="view-toggle-btn ${view==='weekly'?'active':''}" onclick="S.progressView='weekly';renderProgressContent()">Weekly</button>
@@ -2218,7 +2219,7 @@ function renderProgressContent() {
           <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;flex-shrink:0" onclick="addShoeMiles('${shoe.id}','${shoe.name.replace(/'/g,"\\'")}')">+ miles</button>
         </div>`).join('')}
     </div>`:''}
-  </div>`;
+  </div></div>`;
 
   setTimeout(()=>{
     const co = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#6B7D7A'},grid:{color:'#263030'}},x:{ticks:{color:'#6B7D7A',maxTicksLimit:7},grid:{color:'#263030'}}}};
@@ -2445,7 +2446,7 @@ function renderPlanContent() {
 
   el.innerHTML = `
     <input type="file" id="chatFileInput" accept="image/*" multiple style="display:none" onchange="addChatImgs(this)">
-    <div class="plan-chat-shell">
+    <div class="tab-page-shell">
     <div class="chat-area" id="chatArea">
       ${S.chatHistory.length===0?`<div class="empty-state">
         <div><img src="${SANTA_ICON_64}" width="60" height="60" style="border-radius:4px"></div>
@@ -2493,7 +2494,7 @@ function renderTrainingPlanContent() {
 
   const viewHTML = _planView==='block' ? renderBlockView() : renderSessionsView();
 
-  el.innerHTML = `<div class="tab-scroll">
+  el.innerHTML = `<div class="tab-page-shell"><div class="tab-scroll">
     <div style="display:flex;gap:8px;padding:12px 16px 0">
       <button class="btn ${_planView==='sessions'?'btn-primary':'btn-secondary'} btn-sm" onclick="_planView='sessions';renderTrainingPlanContent()">Sessions</button>
       <button class="btn ${_planView==='block'?'btn-primary':'btn-secondary'} btn-sm" onclick="_planView='block';renderTrainingPlanContent()">Block</button>
@@ -2523,7 +2524,7 @@ function renderTrainingPlanContent() {
         <span style="font-size:12px">Add screenshot</span>
       </div>
     </div>
-  </div>`;
+  </div></div>`;
 }
 
 function addPlanImg() {
