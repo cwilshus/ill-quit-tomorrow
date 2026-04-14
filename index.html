@@ -875,20 +875,24 @@ async function testApiKey() {
 // ─── AI TEXT FORMATTER ───────────────────────────────────────
 function fmtAI(t) {
   if (!t) return '';
+  // Insert paragraph break before lines starting with ** (section headers like **Sleep Architecture** —)
+  t = t.replace(/\n(\*\*)/g, '\n\n$1');
   // Markdown headers → bold block
-  t = t.replace(/^#{1,3}\s+(.+)$/gm, '\n<strong style="display:block;margin:10px 0 3px;font-size:13px">$1</strong>');
+  t = t.replace(/^#{1,3}\s+(.+)$/gm, '<strong style="display:block;margin:10px 0 3px;font-size:13px">$1</strong>');
   // Bold
   t = t.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
   // Bullet lines
   t = t.replace(/^[-*•]\s+(.+)$/gm, '<li style="margin-bottom:3px">$1</li>');
   // Wrap consecutive <li> in <ul>
   t = t.replace(/(<li[^>]*>.*?<\/li>\n?)+/g, m=>`<ul style="padding-left:16px;margin:4px 0">${m}</ul>`);
-  // Paragraphs (skip lines that are already HTML)
-  return t.split(/\n{2,}/).map(p => {
+  // Paragraphs — bold-starting paragraphs get top spacing (after first)
+  return t.split(/\n{2,}/).map((p, idx) => {
     p = p.trim();
     if (!p) return '';
     if (p.startsWith('<')) return p;
-    return `<p style="margin-bottom:6px">${p.replace(/\n/g,'<br>')}</p>`;
+    const isHeader = p.startsWith('<strong>');
+    const mt = idx > 0 && isHeader ? '14px' : '0';
+    return `<p style="margin:${mt} 0 6px">${p.replace(/\n/g,'<br>')}</p>`;
   }).filter(Boolean).join('');
 }
 
@@ -995,13 +999,12 @@ async function getAdvice(date) {
   renderTodayContent();
   const log = S.logs[date];
   const m = log?.morning || {};
-  const dow = dayOfWeek(date);
-  const scheduled = SCHEDULE[dow] || 'Rest/Active Recovery';
+  const planSession = getPlanForDate(date) || SCHEDULE[dayOfWeek(date)] || 'Rest/Active Recovery';
   const prompt = `${athleteCtx()}
 
-Today is ${fmtDay(date)} ${date}. Scheduled session: ${scheduled}.
+Today is ${fmtDay(date)} ${date}. Today's planned session: ${planSession}.
 
-Give today's coaching focus in 2–3 sentences. Be direct and specific: effort level, pacing strategy, or one key cue for this session based on today's readiness and recent training. No generic encouragement. If readiness is low, address that directly.`;
+In 2–3 sentences: give the key coaching cue for this session — specific effort level, pacing target, or execution focus based on today's readiness and recent training. No generic encouragement. If readiness is compromised, address that directly and say what to modify.`;
   try {
     const text = await aiText(prompt);
     S.summaries[date+'-advice'] = text;
@@ -1191,22 +1194,7 @@ function renderDayView(d) {
 
   // ── SECTION 1 ──────────────────────────────────────────────
 
-  // 1a. Training Readiness (short card)
-  const hasReadiness = m.hrv || m.recovery || m.restingHr;
-  const hrvColor = m.hrv==='green'?'var(--green)':m.hrv==='yellow'?'var(--yellow)':m.hrv==='red'?'var(--red)':'var(--muted)';
-  html += `<div class="card" style="margin-bottom:8px">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <span class="card-title">Training Readiness</span>
-      <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:2px 0" onclick="switchTab('plan')">Update →</button>
-    </div>
-    ${hasReadiness ? `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
-      ${m.hrv?`<div style="display:flex;align-items:center;gap:5px"><div class="hrv-dot hrv-${m.hrv}" style="width:10px;height:10px"></div><span style="font-size:14px;font-weight:700;color:${hrvColor}">${m.hrv[0].toUpperCase()+m.hrv.slice(1)}</span><span class="label">HRV</span></div>`:''}
-      ${m.recovery?`<div><span style="font-size:14px;font-weight:700">${m.recovery}/5</span><span class="label" style="margin-left:4px">Recovery</span></div>`:''}
-      ${m.restingHr?`<div><span style="font-size:14px;font-weight:700">${m.restingHr}</span><span class="label" style="margin-left:4px">bpm resting</span></div>`:''}
-    </div>` : `<div class="text-sm text-muted" style="margin-top:6px">Not logged · tell Santa to update</div>`}
-  </div>`;
-
-  // 1b. Sleep Analysis (expandable)
+  // 1a. Sleep Analysis (expandable)
   const expSleep = _todayExp.has('sleep');
   const hasSleep = m.sleepScore || m.sleepH != null;
   const sleepSummary = hasSleep ? [m.sleepScore?`${m.sleepScore} score`:'', (m.sleepH!=null)?`${m.sleepH}h${m.sleepM?m.sleepM+'m':''}`:''].filter(Boolean).join(' · ') : '';
@@ -1215,7 +1203,6 @@ function renderDayView(d) {
       <span class="card-title">Sleep</span>
       <div style="display:flex;align-items:center;gap:10px">
         ${sleepSummary?`<span style="font-size:12px;color:var(--muted)">${sleepSummary}</span>`:''}
-        <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:2px 0" onclick="event.stopPropagation();switchTab('plan')">Update →</button>
         <span style="font-size:16px;color:var(--muted);line-height:1">${expSleep?'⌃':'⌄'}</span>
       </div>
     </div>
@@ -1225,18 +1212,20 @@ function renderDayView(d) {
   </div>`;
 
   // 1c. Nutrition (short card)
-  const t = S.settings.macroTargets;
   const hasNut = n.cal || n.pro || n.carb || n.fat;
   html += `<div class="card" style="margin-bottom:8px">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span class="card-title">Nutrition</span>
-      <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:2px 0" onclick="switchTab('plan')">Log →</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${!hasNut?`<span class="text-sm text-muted">Not logged</span>`:''}
+        ${!hasNut?`<button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:2px 0" onclick="switchTab('plan')">Log →</button>`:''}
+      </div>
     </div>
     ${hasNut?`<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
       ${[['Cal',n.cal,'kcal'],['Pro',n.pro,'g'],['Carbs',n.carb,'g'],['Fat',n.fat,'g'],n.water?['Water',n.water,'oz']:null].filter(Boolean).map(([lbl,val,unit])=>
         `<div><span style="font-size:14px;font-weight:700">${val||'—'}</span><span class="label" style="margin-left:3px">${lbl}</span></div>`
       ).join('')}
-    </div>`:`<div class="text-sm text-muted" style="margin-top:6px">Not logged</div>`}
+    </div>`:''}
   </div>`;
 
   // ── SECTION 2 ──────────────────────────────────────────────
@@ -1257,47 +1246,31 @@ function renderDayView(d) {
     </div>`;
   }
 
-  // 2b. Today's Training Brief (expandable)
+  // 2b. Sessions (expandable, with completion checkbox)
   const advice = S.summaries[d+'-advice'];
-  const expBrief = _todayExp.has('brief');
-  const plan = getPlanForDate(d);
-  const scheduled = SCHEDULE[dayOfWeek(d)] || 'Rest';
-  const planLabel = plan || scheduled;
-
-  let briefContent = '';
-  if (!S.settings.apiKey) {
-    briefContent = `<div class="text-sm text-muted" style="margin-top:6px">Add your API key in Settings to unlock coaching.</div>`;
-  } else if (advice === 'loading') {
-    briefContent = `<div class="advice-loading"><div class="spinner"></div> Generating brief…</div>`;
-  } else if (advice) {
-    const sentences = advice.split(/(?<=[.!?])\s+/);
-    const oneLiner = sentences[0] || advice;
-    briefContent = expBrief
-      ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;line-height:1.6">${fmtAI(advice)}</div><button class="btn btn-ghost btn-sm" style="margin-top:4px;font-size:11px;padding:3px 0" onclick="event.stopPropagation();delete S.summaries['${d}-advice'];save();renderTodayContent()">${sparkIcon(11)} Refresh</button>`
-      : `<div style="font-size:13px;color:var(--muted2);margin-top:6px">${oneLiner}</div>`;
-  } else if (advice === null) {
-    briefContent = `<div class="text-sm text-muted" style="margin-top:6px">Couldn't generate. <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();delete S.summaries['${d}-advice'];renderTodayContent()">Retry</button></div>`;
-  } else {
-    briefContent = `<div class="text-sm text-muted" style="margin-top:6px">Generating on first open…</div>`;
-  }
-
-  html += `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('brief')">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <span class="card-title" style="display:flex;align-items:center;gap:6px">${sparkIcon(12)} ${planLabel}</span>
-      <span style="font-size:16px;color:var(--muted);line-height:1">${expBrief?'⌃':'⌄'}</span>
-    </div>
-    ${briefContent}
-  </div>`;
-
-  // 2c. Sessions (expandable, with completion checkbox)
+  const planDesc = getPlanForDate(d);
   const sessions = log?.garmin?.sessions || [];
   sessions.forEach((s, i) => {
     const key = `sg${i}`;
     const exp = _todayExp.has(key);
     const done = !!s.completed;
+    // Title: plan description (uppercase) for first session, tag for subsequent
     const tag = s.tag || s.sessionType || `Session ${i+1}`;
+    const title = i === 0 && planDesc ? planDesc.toUpperCase() : tag.toUpperCase();
     const parts = [s.manual?.dist?`${s.manual.dist} mi`:'', s.manual?.pace?`${s.manual.pace}/mi`:''].filter(Boolean);
     const meta = parts.join(' · ');
+
+    // Brief from Santa (shown on every session card)
+    let briefHtml = '';
+    if (advice === 'loading') {
+      briefHtml = `<div class="advice-loading" style="margin-top:6px"><div class="spinner"></div></div>`;
+    } else if (advice) {
+      const oneLiner = advice.split(/(?<=[.!?])\s+/)[0] || advice;
+      briefHtml = exp
+        ? `<div style="margin-top:8px;font-size:13px;line-height:1.6;color:var(--muted2)">${fmtAI(advice)}</div>`
+        : `<div style="margin-top:5px;font-size:12px;line-height:1.5;color:var(--muted)">${oneLiner}</div>`;
+    }
+
     let details = '';
     if (exp) {
       if (s.manual?.hr) details += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
@@ -1309,17 +1282,18 @@ function renderDayView(d) {
       if (s.intervalSets?.length) details += `<div class="text-sm text-muted" style="margin-top:4px">Intervals: ${s.intervalSets.map(iv=>iv.pace+'/mi').join(', ')}</div>`;
     }
     html += `<div class="card" style="margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <button onclick="event.stopPropagation();toggleSessionComplete('${d}',${i})" style="width:22px;height:22px;border-radius:6px;border:2px solid ${done?'var(--green)':'var(--red)'};background:${done?'color-mix(in srgb,var(--green) 15%,transparent)':'color-mix(in srgb,var(--red) 10%,transparent)'};cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <button onclick="event.stopPropagation();toggleSessionComplete('${d}',${i})" style="width:22px;height:22px;margin-top:1px;border-radius:6px;border:2px solid ${done?'var(--green)':'var(--red)'};background:${done?'color-mix(in srgb,var(--green) 15%,transparent)':'color-mix(in srgb,var(--red) 10%,transparent)'};cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s">
           ${done?`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`:''}
         </button>
         <div style="flex:1;cursor:pointer;min-width:0" onclick="todayToggle('${key}')">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <span style="font-size:14px;font-weight:600;color:var(--text)">${tag}</span>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="flex:1;min-width:0">
+              <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.01em">${title}</span>
               ${meta?`<span style="font-size:12px;color:var(--muted);margin-left:8px">${meta}</span>`:''}
+              ${briefHtml}
             </div>
-            <span style="font-size:16px;color:var(--muted);line-height:1;margin-left:8px">${exp?'⌃':'⌄'}</span>
+            <span style="font-size:16px;color:var(--muted);line-height:1;margin-left:8px;flex-shrink:0">${exp?'⌃':'⌄'}</span>
           </div>
         </div>
       </div>
@@ -1936,21 +1910,30 @@ function totalWeekNum() {
 function renderTopBar() {
   const days = daysUntil(S.settings.raceDate);
   const log = S.logs[S.selDate];
-  const hrv = log?.morning?.hrv;
-  const hClass = hrv==='green'?'hrv-green':hrv==='yellow'?'hrv-yellow':hrv==='red'?'hrv-red':'hrv-none';
+  const m = log?.morning || {};
   const wk = currentWeekNum(), tot = totalWeekNum();
   const weekLabel = wk && tot ? `Week ${wk} of ${tot}` : '';
+  // Training Readiness indicator (TR) — prefers extracted readinessLabel, falls back to hrv
+  let trLabel = '', trColor = '';
+  const rl = m.readinessLabel;
+  if (rl) {
+    trLabel = rl === 'High' ? 'HIGH' : rl === 'Moderate' ? 'MOD' : 'LOW';
+    trColor = rl === 'High' ? 'var(--green)' : rl === 'Moderate' ? 'var(--yellow)' : 'var(--red)';
+  } else if (m.hrv) {
+    trLabel = m.hrv === 'green' ? 'HIGH' : m.hrv === 'yellow' ? 'MOD' : 'LOW';
+    trColor = m.hrv === 'green' ? 'var(--green)' : m.hrv === 'yellow' ? 'var(--yellow)' : 'var(--red)';
+  }
+  const trHtml = trLabel ? `<span style="font-size:10px;font-weight:800;letter-spacing:0.05em;color:${trColor};border:1px solid ${trColor};border-radius:4px;padding:2px 6px">${trLabel}</span>` : '';
   document.getElementById('topBar').innerHTML = `
     <div class="top-bar-left">
       <div class="app-name">I'll Quit Tomorrow</div>
       <div class="top-meta">
         ${weekLabel?`<span class="block-week">${weekLabel}</span><span>·</span>`:''}
-        <div class="hrv-dot ${hClass}" title="HRV: ${hrv||'not logged'}"></div>
-        <span>·</span>
         <span class="race-days">${days}d to race</span>
       </div>
     </div>
-    <div class="top-bar-right">
+    <div class="top-bar-right" style="display:flex;align-items:center;gap:8px">
+      ${trHtml}
       <button class="icon-btn" style="background:transparent;border-color:transparent;color:var(--muted2)" onclick="openModal('settingsModal');renderSettingsContent()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
     </div>
   `;
@@ -2440,7 +2423,8 @@ Return this exact structure (null for anything not clearly stated):
   },
   "health": {
     "hrv": "green"|"yellow"|"red"|null, "recovery": 1-5 or null, "sleepScore": number or null,
-    "sleepH": hours or null, "sleepM": minutes or null, "restingHr": bpm or null, "weight": lbs or null
+    "sleepH": hours or null, "sleepM": minutes or null, "restingHr": bpm or null, "weight": lbs or null,
+    "readinessScore": number 0-100 or null, "readinessLabel": "High"|"Moderate"|"Low"|null
   }
 }
 Return exactly {} if this is a general question with no specific training or health data.`;
@@ -2483,6 +2467,8 @@ Return exactly {} if this is a general question with no specific training or hea
       if (h.sleepM != null) log.morning.sleepM = h.sleepM;
       if (h.restingHr) log.morning.restingHr = h.restingHr;
       if (h.weight) log.morning.weight = h.weight;
+      if (h.readinessScore) log.morning.readinessScore = h.readinessScore;
+      if (h.readinessLabel) log.morning.readinessLabel = h.readinessLabel;
       if (hadAny) added.push('readiness updated');
     }
 
