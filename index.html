@@ -1093,6 +1093,12 @@ const _todayExp = new Set();
 let _planView = 'sessions'; // 'block' | 'sessions'
 let _planSelWeek = '';
 function todayToggle(key) { _todayExp.has(key)?_todayExp.delete(key):_todayExp.add(key); renderTodayContent(); }
+function toggleSessionComplete(d, i) {
+  const s = dayLog(d).garmin.sessions[i];
+  if (!s) return;
+  s.completed = !s.completed;
+  save(); renderTodayContent();
+}
 
 function renderTodayContent() {
   const el = document.getElementById('tab-today');
@@ -1123,9 +1129,14 @@ function renderTodayContent() {
 
   el.innerHTML = stripHTML + renderDayView(S.selDate);
 
-  // Trigger advice if morning logged but no advice yet
-  if (hasMorning(S.selDate) && !S.summaries[S.selDate+'-advice'] && S.settings.apiKey) {
-    getAdvice(S.selDate);
+  // Auto-generate Training Brief on first open (no readiness required)
+  if (S.selDate === todayStr && !S.summaries[todayStr+'-advice'] && S.settings.apiKey) {
+    getAdvice(todayStr);
+  }
+  // Auto-generate weekly summary on Sundays
+  if (S.selDate === todayStr && isSunday(todayStr) && S.settings.apiKey) {
+    const wkKey = 'coach-summary-'+weekStart(todayStr);
+    if (!S.summaries[wkKey]) setTimeout(()=>generateCoachSummary(), 200);
   }
   // Proactive coaching trigger — today only, not dismissed
   if (S.selDate === todayStr && !S.summaries[todayStr+'-proactive'] && !S.summaries[todayStr+'-proactive-dismissed']) {
@@ -1157,7 +1168,8 @@ function renderDayView(d) {
   let html = '';
   const todayStr = today();
   const log = S.logs[d];
-  const m = log?.morning;
+  const m = log?.morning || {};
+  const n = log?.nutrition || {};
   const isToday = d === todayStr;
 
   // ── PROACTIVE BANNER (today only) ─────────────────────────
@@ -1177,183 +1189,143 @@ function renderDayView(d) {
     }
   }
 
-  // ── TODAY'S FOCUS ──────────────────────────────────────────
+  // ── SECTION 1 ──────────────────────────────────────────────
+
+  // 1a. Training Readiness (short card)
+  const hasReadiness = m.hrv || m.recovery || m.restingHr;
+  const hrvColor = m.hrv==='green'?'var(--green)':m.hrv==='yellow'?'var(--yellow)':m.hrv==='red'?'var(--red)':'var(--muted)';
+  html += `<div class="card" style="margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="card-title">Training Readiness</span>
+      <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:2px 0" onclick="switchTab('plan')">Update →</button>
+    </div>
+    ${hasReadiness ? `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+      ${m.hrv?`<div style="display:flex;align-items:center;gap:5px"><div class="hrv-dot hrv-${m.hrv}" style="width:10px;height:10px"></div><span style="font-size:14px;font-weight:700;color:${hrvColor}">${m.hrv[0].toUpperCase()+m.hrv.slice(1)}</span><span class="label">HRV</span></div>`:''}
+      ${m.recovery?`<div><span style="font-size:14px;font-weight:700">${m.recovery}/5</span><span class="label" style="margin-left:4px">Recovery</span></div>`:''}
+      ${m.restingHr?`<div><span style="font-size:14px;font-weight:700">${m.restingHr}</span><span class="label" style="margin-left:4px">bpm resting</span></div>`:''}
+    </div>` : `<div class="text-sm text-muted" style="margin-top:6px">Not logged · tell Santa to update</div>`}
+  </div>`;
+
+  // 1b. Sleep Analysis (expandable)
+  const expSleep = _todayExp.has('sleep');
+  const hasSleep = m.sleepScore || m.sleepH != null;
+  const sleepSummary = hasSleep ? [m.sleepScore?`${m.sleepScore} score`:'', (m.sleepH!=null)?`${m.sleepH}h${m.sleepM?m.sleepM+'m':''}`:''].filter(Boolean).join(' · ') : '';
+  html += `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('sleep')">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="card-title">Sleep</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        ${sleepSummary?`<span style="font-size:12px;color:var(--muted)">${sleepSummary}</span>`:''}
+        <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:2px 0" onclick="event.stopPropagation();switchTab('plan')">Update →</button>
+        <span style="font-size:16px;color:var(--muted);line-height:1">${expSleep?'⌃':'⌄'}</span>
+      </div>
+    </div>
+    ${expSleep?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      ${m.sleepAiSummary?`<div style="font-size:13px;line-height:1.6">${fmtAI(m.sleepAiSummary)}</div>`:hasSleep?`<div class="text-sm text-muted">No sleep analysis yet. Share a screenshot with Santa to get one.</div>`:`<div class="text-sm text-muted">No sleep data logged.</div>`}
+    </div>`:''}
+  </div>`;
+
+  // 1c. Nutrition (short card)
+  const t = S.settings.macroTargets;
+  const hasNut = n.cal || n.pro || n.carb || n.fat;
+  html += `<div class="card" style="margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="card-title">Nutrition</span>
+      <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:2px 0" onclick="switchTab('plan')">Log →</button>
+    </div>
+    ${hasNut?`<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+      ${[['Cal',n.cal,'kcal'],['Pro',n.pro,'g'],['Carbs',n.carb,'g'],['Fat',n.fat,'g'],n.water?['Water',n.water,'oz']:null].filter(Boolean).map(([lbl,val,unit])=>
+        `<div><span style="font-size:14px;font-weight:700">${val||'—'}</span><span class="label" style="margin-left:3px">${lbl}</span></div>`
+      ).join('')}
+    </div>`:`<div class="text-sm text-muted" style="margin-top:6px">Not logged</div>`}
+  </div>`;
+
+  // ── SECTION 2 ──────────────────────────────────────────────
+
+  // 2a. Weekly Summary (expandable)
+  const wkKey = 'coach-summary-'+weekStart(d);
+  const wkSum = S.summaries[wkKey];
+  const expWeekly = _todayExp.has('weekly');
+  if (wkSum) {
+    html += `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('weekly')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="card-title" style="display:flex;align-items:center;gap:6px">${sparkIcon(12)} Weekly Summary</span>
+        <span style="font-size:16px;color:var(--muted);line-height:1">${expWeekly?'⌃':'⌄'}</span>
+      </div>
+      ${expWeekly?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        ${wkSum==='loading'?`<div class="advice-loading"><div class="spinner"></div> Generating…</div>`:`<div style="font-size:13px;line-height:1.6">${fmtAI(wkSum)}</div>`}
+      </div>`:''}
+    </div>`;
+  }
+
+  // 2b. Today's Training Brief (expandable)
+  const advice = S.summaries[d+'-advice'];
+  const expBrief = _todayExp.has('brief');
   const plan = getPlanForDate(d);
   const scheduled = SCHEDULE[dayOfWeek(d)] || 'Rest';
-  const focusTitle = plan || scheduled;
+  const planLabel = plan || scheduled;
 
-  let adviceContent = '';
+  let briefContent = '';
   if (!S.settings.apiKey) {
-    adviceContent = `<div class="text-sm text-muted" style="margin-top:6px">Add your API key in Settings to unlock daily coaching.</div>`;
-  } else if (!hasMorning(d) && isToday) {
-    adviceContent = `<div class="text-sm text-muted" style="margin-top:6px;cursor:pointer" onclick="switchTab('plan')">Tell Santa your readiness to get today's focus →</div>`;
-  } else if (S.summaries[d+'-advice'] === 'loading') {
-    adviceContent = `<div class="advice-loading" style="margin-top:8px"><div class="spinner"></div> Generating focus…</div>`;
-  } else if (S.summaries[d+'-advice']) {
-    adviceContent = `<div style="font-size:13px;line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">${fmtAI(S.summaries[d+'-advice'])}</div>`;
-    if (isToday) adviceContent += `<button class="btn btn-ghost btn-sm" style="margin-top:2px;padding:4px 0;font-size:12px" onclick="delete S.summaries['${d}-advice'];save();renderTodayContent()">${sparkIcon(11)} Refresh</button>`;
-  } else if (S.summaries[d+'-advice'] === null) {
-    adviceContent = `<div class="text-sm text-muted" style="margin-top:6px">Couldn't generate focus. <button class="btn btn-ghost btn-sm" onclick="delete S.summaries['${d}-advice'];renderTodayContent()">Retry</button></div>`;
+    briefContent = `<div class="text-sm text-muted" style="margin-top:6px">Add your API key in Settings to unlock coaching.</div>`;
+  } else if (advice === 'loading') {
+    briefContent = `<div class="advice-loading"><div class="spinner"></div> Generating brief…</div>`;
+  } else if (advice) {
+    const sentences = advice.split(/(?<=[.!?])\s+/);
+    const oneLiner = sentences[0] || advice;
+    briefContent = expBrief
+      ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;line-height:1.6">${fmtAI(advice)}</div><button class="btn btn-ghost btn-sm" style="margin-top:4px;font-size:11px;padding:3px 0" onclick="event.stopPropagation();delete S.summaries['${d}-advice'];save();renderTodayContent()">${sparkIcon(11)} Refresh</button>`
+      : `<div style="font-size:13px;color:var(--muted2);margin-top:6px">${oneLiner}</div>`;
+  } else if (advice === null) {
+    briefContent = `<div class="text-sm text-muted" style="margin-top:6px">Couldn't generate. <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();delete S.summaries['${d}-advice'];renderTodayContent()">Retry</button></div>`;
+  } else {
+    briefContent = `<div class="text-sm text-muted" style="margin-top:6px">Generating on first open…</div>`;
   }
 
-  html += `
-    <div class="card card-accent">
-      <div class="card-header" style="margin-bottom:4px">
-        <span class="card-title" style="display:flex;align-items:center;gap:6px">${sparkIcon(12)} Today's Focus</span>
-        <span style="font-size:11px;color:var(--muted)">${fmtDate(d)}</span>
-      </div>
-      <div style="font-size:15px;font-weight:700;color:var(--text)">${focusTitle}</div>
-      ${adviceContent}
-      ${!hasGarminSessions(d)&&!hasSession(d)&&isToday?`<button class="btn btn-primary btn-sm" style="margin-top:10px;width:100%" onclick="switchTab('plan')">Log with Coach Santa →</button>`:''}
-    </div>`;
+  html += `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('brief')">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="card-title" style="display:flex;align-items:center;gap:6px">${sparkIcon(12)} ${planLabel}</span>
+      <span style="font-size:16px;color:var(--muted);line-height:1">${expBrief?'⌃':'⌄'}</span>
+    </div>
+    ${briefContent}
+  </div>`;
 
-  // ── READINESS ──────────────────────────────────────────────
-  const expR = _todayExp.has('readiness');
-  if (m && (m.hrv || m.recovery || m.sleepScore || m.sleepH != null)) {
-    const hrvColor = m.hrv==='green'?'var(--green)':m.hrv==='yellow'?'var(--yellow)':m.hrv==='red'?'var(--red)':'var(--muted)';
-    const dots = [];
-    if (m.hrv) dots.push(`<div style="display:flex;align-items:center;gap:5px"><div class="hrv-dot hrv-${m.hrv}" style="width:11px;height:11px"></div><span style="font-size:14px;font-weight:600;color:${hrvColor}">${m.hrv[0].toUpperCase()+m.hrv.slice(1)}</span><span style="font-size:11px;color:var(--muted)">HRV</span></div>`);
-    if (m.recovery) dots.push(`<span style="font-size:14px;font-weight:600">${m.recovery}/5</span><span style="font-size:11px;color:var(--muted);margin-left:3px">Recovery</span>`);
-    if (m.sleepScore) dots.push(`<span style="font-size:14px;font-weight:600">${m.sleepScore}</span><span style="font-size:11px;color:var(--muted);margin-left:3px">Sleep score</span>`);
-    if (m.sleepH != null) dots.push(`<span style="font-size:14px;font-weight:600">${m.sleepH}h${m.sleepM?m.sleepM+'m':''}</span><span style="font-size:11px;color:var(--muted);margin-left:3px">Sleep</span>`);
-
-    let expanded = '';
-    if (expR) {
-      if (m.restingHr) expanded += `<div style="font-size:13px;color:var(--muted2);margin-top:8px">Resting HR: <strong style="color:var(--text)">${m.restingHr} bpm</strong></div>`;
-      if (m.sleepQuality) expanded += `<div style="font-size:13px;color:var(--muted2)">Sleep quality: <strong style="color:var(--text)">${m.sleepQuality}/5</strong></div>`;
-      if (m.sleepAiSummary) {
-        expanded += `<div style="margin-top:10px;padding:10px;background:var(--cream-dim);border:1px solid var(--cream-border);border-radius:8px;font-size:13px;line-height:1.6">${fmtAI(m.sleepAiSummary)}</div>`;
-      } else if (m.sleepImg && S.settings.apiKey) {
-        expanded += `<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="event.stopPropagation();analyzeSleep('${d}')">Analyze sleep</button>`;
-      }
+  // 2c. Sessions (expandable, with completion checkbox)
+  const sessions = log?.garmin?.sessions || [];
+  sessions.forEach((s, i) => {
+    const key = `sg${i}`;
+    const exp = _todayExp.has(key);
+    const done = !!s.completed;
+    const tag = s.tag || s.sessionType || `Session ${i+1}`;
+    const parts = [s.manual?.dist?`${s.manual.dist} mi`:'', s.manual?.pace?`${s.manual.pace}/mi`:''].filter(Boolean);
+    const meta = parts.join(' · ');
+    let details = '';
+    if (exp) {
+      if (s.manual?.hr) details += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
+      if (s.manual?.cadence) details += `<div class="text-sm text-muted">Cadence: ${s.manual.cadence} spm</div>`;
+      if (s.manual?.rpe) details += `<div class="text-sm text-muted">RPE: ${s.manual.rpe}/10</div>`;
+      const shoe = S.settings.shoes?.find(sh=>sh.id===s.shoeId);
+      if (shoe) details += `<div class="text-sm text-muted">Shoes: ${shoe.name}</div>`;
+      if (s.notes) details += `<div style="margin-top:6px;font-size:13px;color:var(--text);font-style:italic">${s.notes}</div>`;
+      if (s.intervalSets?.length) details += `<div class="text-sm text-muted" style="margin-top:4px">Intervals: ${s.intervalSets.map(iv=>iv.pace+'/mi').join(', ')}</div>`;
     }
-
-    html += `
-      <div class="card" style="cursor:pointer" onclick="todayToggle('readiness')">
-        <div class="card-header" style="margin-bottom:${expR?'10':'0'}px">
-          <span class="card-title">Readiness</span>
-          <span style="font-size:18px;color:var(--muted);line-height:1">${expR?'⌃':'⌄'}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">${dots.map(d=>`<div style="display:flex;align-items:center">${d}</div>`).join('')}</div>
-        ${expanded}
-      </div>`;
-  } else if (isToday) {
-    html += `
-      <div class="card" style="cursor:pointer" onclick="switchTab('health')">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:13px;color:var(--muted2)">Log morning check-in</span>
-          <span style="font-size:12px;color:var(--accent)">Health →</span>
-        </div>
-      </div>`;
-  }
-
-  // ── WEEKLY SUMMARY BANNER ──────────────────────────────────
-  if (isToday && S.settings.apiKey) {
-    const wkKey = 'coach-summary-'+weekStart(d);
-    const wkSum = S.summaries[wkKey];
-    if (wkSum && wkSum !== 'loading') {
-      html += `<div class="banner banner-blue" style="cursor:pointer;justify-content:space-between" onclick="switchTab('plan')">
-        <span style="font-size:13px;display:flex;align-items:center;gap:6px">${sparkIcon(12)} Weekly summary ready</span>
-        <span style="font-size:12px;opacity:.7">Coach →</span>
-      </div>`;
-    } else if (wkSum === 'loading') {
-      html += `<div class="banner banner-blue" style="justify-content:flex-start;gap:10px"><div class="spinner"></div><span style="font-size:13px">Generating weekly summary…</span></div>`;
-    }
-  }
-
-  // ── SESSIONS (expandable) ──────────────────────────────────
-  if (hasGarminSessions(d)) {
-    log.garmin.sessions.forEach((s, i) => {
-      const key = `sg${i}`;
-      const exp = _todayExp.has(key);
-      const tag = s.tag || s.sessionType || `Session ${i+1}`;
-      const parts = [s.manual?.dist?`${s.manual.dist} mi`:'', s.manual?.pace?`${s.manual.pace}/mi`:''].filter(Boolean);
-      const meta = parts.join(' · ');
-      let details = '';
-      if (exp) {
-        if (s.runType) details += `<div class="text-sm text-muted">Type: ${s.runType}</div>`;
-        if (s.manual?.hr) details += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
-        if (s.manual?.cadence) details += `<div class="text-sm text-muted">Cadence: ${s.manual.cadence} spm</div>`;
-        if (s.manual?.rpe) details += `<div class="text-sm text-muted">RPE: ${s.manual.rpe}/10</div>`;
-        const shoe = S.settings.shoes?.find(sh=>sh.id===s.shoeId);
-        if (shoe) details += `<div class="text-sm text-muted">Shoes: ${shoe.name}</div>`;
-        if (s.notes) details += `<div style="margin-top:6px;font-size:13px;color:var(--text);font-style:italic">${s.notes}</div>`;
-        if (s.intervalSets?.length) details += `<div class="text-sm text-muted" style="margin-top:4px">Intervals: ${s.intervalSets.map(iv=>iv.pace+'/mi').join(', ')}</div>`;
-      }
-      html += `
-        <div class="card" style="cursor:pointer" onclick="todayToggle('${key}')">
-          <div style="display:flex;align-items:center;justify-content:space-between">
+    html += `<div class="card" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="event.stopPropagation();toggleSessionComplete('${d}',${i})" style="width:22px;height:22px;border-radius:6px;border:2px solid ${done?'var(--green)':'var(--red)'};background:${done?'color-mix(in srgb,var(--green) 15%,transparent)':'color-mix(in srgb,var(--red) 10%,transparent)'};cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s">
+          ${done?`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`:''}
+        </button>
+        <div style="flex:1;cursor:pointer;min-width:0" onclick="todayToggle('${key}')">
+          <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
               <span style="font-size:14px;font-weight:600;color:var(--text)">${tag}</span>
               ${meta?`<span style="font-size:12px;color:var(--muted);margin-left:8px">${meta}</span>`:''}
             </div>
-            <span style="font-size:18px;color:var(--muted);line-height:1">${exp?'⌃':'⌄'}</span>
+            <span style="font-size:16px;color:var(--muted);line-height:1;margin-left:8px">${exp?'⌃':'⌄'}</span>
           </div>
-          ${details?`<div style="margin-top:8px;display:flex;flex-direction:column;gap:3px">${details}</div>`:''}
-        </div>`;
-    });
-    if (log.garmin.soreness?.length) {
-      html += `<div style="padding:0 16px;font-size:12px;color:var(--muted2);margin-top:-6px;margin-bottom:8px">Soreness: ${log.garmin.soreness.join(', ')}</div>`;
-    }
-  }
-
-  if (hasSession(d)) {
-    const session = log.session;
-    const key = 'sold';
-    const exp = _todayExp.has(key);
-    html += `
-      <div class="card" style="cursor:pointer" onclick="todayToggle('${key}')">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:14px;font-weight:600">Session</span>
-          <span style="font-size:18px;color:var(--muted);line-height:1">${exp?'⌃':'⌄'}</span>
         </div>
-        ${exp?`
-          ${session.soreness?.length?`<div class="text-sm text-muted" style="margin-top:6px">Soreness: ${session.soreness.join(', ')}</div>`:''}
-          ${session.workouts.map(w=>{
-            const wShoe = S.settings.shoes?.find(sh=>sh.id===w.shoeId);
-            return `<div style="padding:8px 0;border-top:1px solid var(--border);margin-top:6px">
-              <span class="workout-type-badge badge-${TYPE_BADGE[w.type]||'gpp'}">${w.type}</span>
-              <div style="font-size:14px;font-weight:600">${w.name}</div>
-              ${w.result?`<div class="text-sm text-muted">${w.result}</div>`:''}
-              ${w.rpe?`<div class="text-sm" style="color:var(--accent)">RPE ${w.rpe}/10</div>`:''}
-              ${wShoe?`<div class="text-sm text-muted">${wShoe.name}</div>`:''}
-            </div>`;
-          }).join('')}
-        `:''}
-      </div>`;
-  }
-
-  // ── NUTRITION ──────────────────────────────────────────────
-  if (hasNutrition(d)) {
-    const n = log.nutrition;
-    const t = S.settings.macroTargets;
-    html += `<div class="card">
-      <div class="card-header"><span class="card-title">Nutrition</span><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();S.logSubTab='nutrition';switchTab('log')">Edit</button></div>
-      <div class="macro-grid">
-        ${[['Cal',n.cal,t.cal,'kcal'],['Protein',n.pro,t.pro,'g'],['Carbs',n.carb,t.carb,'g'],['Fat',n.fat,t.fat,'g']].map(([lbl,val,target,unit])=>`
-          <div class="macro-cell">
-            <span class="macro-label">${lbl}</span>
-            <span class="macro-value">${val||0}</span>
-            <div class="macro-bar"><div class="macro-fill ${val>target?'macro-over':''}" style="width:${Math.min(100,Math.round((val||0)/target*100))}%"></div></div>
-            <span class="macro-target">/ ${target} ${unit}</span>
-          </div>`).join('')}
       </div>
+      ${details?`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:3px">${details}</div>`:''}
     </div>`;
-  }
-
-  // ── SUNDAY WEIGH-IN ────────────────────────────────────────
-  if (isSunday(d) && (!m || !m.weight)) {
-    html += `<div class="weigh-in-banner">
-      <div class="weigh-in-icon" style="color:var(--accent)"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 10h2l2-3 2 6 2-3h2"/></svg></div>
-      <div class="weigh-in-text">
-        <div class="weigh-in-title">Sunday Weigh-In</div>
-        <div class="weigh-in-sub">Log your weight in Health → Morning Check-In</div>
-      </div>
-      <button class="btn btn-secondary btn-sm" onclick="switchTab('health')">Log →</button>
-    </div>`;
-  }
-
-  if (!html) html = `<div class="empty-state mt-3"><div class="empty-state-icon">📅</div><div class="empty-state-text">No data for ${fmtDate(d)}.<br>Log your morning check-in to get started.</div></div>`;
+  });
 
   return html;
 }
