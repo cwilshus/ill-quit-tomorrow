@@ -2880,7 +2880,9 @@ function render() {
 
 // ─── INIT ─────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/ill-quit-tomorrow/sw.js').catch(()=>{});
+  navigator.serviceWorker.register('/ill-quit-tomorrow/sw.js', { updateViaCache: 'none' })
+    .then(reg => { try { reg.update(); } catch (_) {} })
+    .catch(() => {});
 }
 
 loadState();
