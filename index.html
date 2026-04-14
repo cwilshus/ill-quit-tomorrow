@@ -38,8 +38,8 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{height:100%;height:-webkit-fill-available}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;font-size:15px;min-height:100%;min-height:-webkit-fill-available;min-height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
-#app{max-width:430px;width:100%;margin:0 auto;min-height:100%;min-height:-webkit-fill-available;min-height:100dvh;display:flex;flex-direction:column;background:var(--bg)}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;font-size:15px;min-height:100%;min-height:-webkit-fill-available;min-height:100svh;overflow:hidden;-webkit-font-smoothing:antialiased}
+#app{max-width:430px;width:100%;margin:0 auto;min-height:100%;min-height:-webkit-fill-available;min-height:100svh;display:flex;flex-direction:column;background:var(--bg)}
 
 /* TOP BAR */
 .top-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;padding-top:calc(10px + var(--safe-t));background:var(--bg);position:sticky;top:0;z-index:20;border-bottom:1px solid var(--border)}
@@ -59,11 +59,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 /* MAIN */
 main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:16px}
+html.plan-fill main{overflow:hidden;padding-bottom:0}
 .tab-panel{display:none;padding:0 0 16px}
 .tab-panel.active{display:block}
 #tab-plan.active{display:flex;flex-direction:column;overflow:hidden;padding:0}
 
-/* BOTTOM NAV (in-flow + sticky like hep-training — avoids transform/fixed viewport gaps on iOS) */
+/* BOTTOM NAV (in-flow + sticky — html.plan-fill tightens main when Coach tab is open) */
 .bottom-nav{position:sticky;bottom:0;flex-shrink:0;width:100%;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:20;padding-bottom:var(--safe-b)}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:var(--tab-h);cursor:pointer;color:var(--muted);transition:color .15s;font-size:10px;font-weight:500;letter-spacing:0}
 .nav-item.active{color:var(--accent)}
@@ -2045,10 +2046,7 @@ function switchTab(t) {
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   const panel = document.getElementById('tab-'+t);
   if (panel) panel.classList.add('active');
-  // Santa tab uses flex fill layout — disable main scroll padding; restore for other tabs
-  const mainEl = document.getElementById('main');
-  mainEl.style.overflowY = t==='plan' ? 'hidden' : '';
-  mainEl.style.paddingBottom = t==='plan' ? '0' : '';
+  document.documentElement.classList.toggle('plan-fill', t === 'plan');
   renderTopBar();
   renderBottomNav();
   if (t==='today') renderTodayContent();
