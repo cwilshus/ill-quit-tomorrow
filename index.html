@@ -2170,7 +2170,7 @@ function renderProgressContent() {
       <div><div style="font-size:26px;font-weight:700;color:var(--accent);line-height:1">${totalMiles.toFixed(1)}</div><div class="label" style="margin-top:4px">Miles</div></div>
     </div>
 
-    <div class="card-title-lg" style="padding:0 16px 8px">Miles per ${view==='weekly'?'Week':'Month'}</div>
+    <div class="card-title-lg" style="padding:0 16px 8px">Running Miles</div>
     <div class="chart-wrap">${milesData.length?`<canvas id="milesChart"></canvas>`:chartPlaceholder('Log sessions to see miles')}</div>
 
     <div class="card-title-lg" style="padding:0 16px 8px">Running Pace</div>
@@ -2182,7 +2182,7 @@ function renderProgressContent() {
     <!-- Health & Sleep -->
     <div class="section-header" style="margin-top:8px">Health &amp; Sleep</div>
 
-    <div class="card-title-lg" style="padding:0 16px 8px">HRV Readiness</div>
+    <div class="card-title-lg" style="padding:0 16px 8px">HRV Status</div>
     <div class="chart-wrap">${hrvData.length?`<canvas id="hrvChart"></canvas>`:chartPlaceholder('Log HRV to see trend')}</div>
 
     <div class="card-title-lg" style="padding:0 16px 8px">Resting Heart Rate</div>
