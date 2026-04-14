@@ -742,7 +742,7 @@ function athleteCtx() {
     if (m.hrv) parts.push(`HRV: ${m.hrv}`);
     if (m.recovery) parts.push(`recovery: ${m.recovery}/5`);
     if (m.sleepScore) parts.push(`sleep score: ${m.sleepScore}`);
-    if (m.sleepH != null) parts.push(`sleep: ${m.sleepH}h${m.sleepM?m.sleepM+'m':''}`);
+    if (m.sleepH != null) parts.push(`sleep: ${m.sleepH}h${m.sleepM?' '+m.sleepM+'m':''}`);
     if (m.restingHr) parts.push(`resting HR: ${m.restingHr} bpm`);
     if (m.weight) parts.push(`weight: ${m.weight} lbs`);
     readiness = parts.join(', ');
@@ -886,11 +886,11 @@ function fmtAI(t) {
   t = t.replace(/^[-*•]\s+(.+)$/gm, '<li style="margin-bottom:3px">$1</li>');
   // Wrap consecutive <li> in <ul>
   t = t.replace(/(<li[^>]*>.*?<\/li>\n?)+/g, m=>`<ul style="padding-left:16px;margin:4px 0">${m}</ul>`);
-  // Paragraphs — bold-starting paragraphs get top spacing (after first)
+  // Paragraphs — block HTML (ul/ol/div) returned as-is; strong-starting = section header with spacing
   return t.split(/\n{2,}/).map((p, idx) => {
     p = p.trim();
     if (!p) return '';
-    if (p.startsWith('<')) return p;
+    if (/^<(ul|ol|div)\b/.test(p)) return p;   // already-rendered block elements
     const isHeader = p.startsWith('<strong>');
     const mt = idx > 0 && isHeader ? '14px' : '0';
     return `<p style="margin:${mt} 0 6px">${p.replace(/\n/g,'<br>')}</p>`;
@@ -1218,7 +1218,7 @@ function renderDayView(d) {
   // 1a. Sleep Analysis (expandable)
   const expSleep = _todayExp.has('sleep');
   const hasSleep = m.sleepScore || m.sleepH != null;
-  const sleepSummary = hasSleep ? [m.sleepScore?`${m.sleepScore} score`:'', (m.sleepH!=null)?`${m.sleepH}h${m.sleepM?m.sleepM+'m':''}`:''].filter(Boolean).join(' · ') : '';
+  const sleepSummary = hasSleep ? [m.sleepScore?`${m.sleepScore} score`:'', (m.sleepH!=null)?`${m.sleepH}h${m.sleepM?' '+m.sleepM+'m':''}`:''].filter(Boolean).join(' · ') : '';
   html += `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('sleep')">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span class="card-title">Sleep</span>
@@ -1287,7 +1287,7 @@ function renderDayView(d) {
       if (advice === 'loading') {
         expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
       } else if (advice) {
-        expandedContent += `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 0;opacity:0.6" onclick="event.stopPropagation();delete S.summaries['${d}-advice'];save();renderTodayContent()">↺ Refresh</button></div><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
+        expandedContent += `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
       }
       // Session stats
       if (s.manual?.hr) expandedContent += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
