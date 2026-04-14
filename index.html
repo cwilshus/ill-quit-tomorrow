@@ -1909,17 +1909,20 @@ function renderTopBar() {
   const m = log?.morning || {};
   const wk = currentWeekNum(), tot = totalWeekNum();
   const weekLabel = wk && tot ? `Week ${wk} of ${tot}` : '';
-  // Training Readiness indicator (TR) — prefers extracted readinessLabel, falls back to hrv
-  let trLabel = '', trColor = '';
-  const rl = m.readinessLabel;
-  if (rl) {
-    trLabel = rl === 'High' ? 'HIGH' : rl === 'Moderate' ? 'MODERATE' : 'LOW';
-    trColor = rl === 'High' ? 'var(--green)' : rl === 'Moderate' ? 'var(--yellow)' : 'var(--red)';
-  } else if (m.hrv) {
-    trLabel = m.hrv === 'green' ? 'HIGH' : m.hrv === 'yellow' ? 'MODERATE' : 'LOW';
-    trColor = m.hrv === 'green' ? 'var(--green)' : m.hrv === 'yellow' ? 'var(--yellow)' : 'var(--red)';
-  }
-  const trHtml = trLabel ? `<span style="font-size:10px;font-weight:800;letter-spacing:0.05em;color:${trColor};border:1px solid ${trColor};border-radius:4px;padding:2px 6px">${trLabel}</span>` : '';
+  // Training Readiness indicator — Garmin 5-level scale
+  // Prime (95-100) = purple, High (75-94) = blue, Moderate (50-74) = green,
+  // Low (25-49) = orange, Poor (0-24) = red
+  const TR_MAP = {
+    'Prime':    { label:'PRIME',    color:'#7B4DFF' },
+    'High':     { label:'HIGH',     color:'#3B82F6' },
+    'Moderate': { label:'MODERATE', color:'var(--green)' },
+    'Low':      { label:'LOW',      color:'#F97316' },
+    'Poor':     { label:'POOR',     color:'var(--red)' },
+  };
+  const HRV_TR = { green:'High', yellow:'Moderate', red:'Poor' };
+  const rl = m.readinessLabel || HRV_TR[m.hrv] || '';
+  const trEntry = TR_MAP[rl];
+  const trHtml = trEntry ? `<span style="font-size:10px;font-weight:800;letter-spacing:0.05em;color:${trEntry.color};border:1px solid ${trEntry.color};border-radius:4px;padding:2px 6px">${trEntry.label}</span>` : '';
   document.getElementById('topBar').innerHTML = `
     <div class="top-bar-left">
       <div class="app-name">I'll Quit Tomorrow</div>
@@ -2420,7 +2423,7 @@ Return this exact structure (null for anything not clearly stated):
   "health": {
     "hrv": "green"|"yellow"|"red"|null, "recovery": 1-5 or null, "sleepScore": number or null,
     "sleepH": hours or null, "sleepM": minutes or null, "restingHr": bpm or null, "weight": lbs or null,
-    "readinessScore": number 0-100 or null, "readinessLabel": "High"|"Moderate"|"Low"|null
+    "readinessScore": number 0-100 or null, "readinessLabel": "Prime"|"High"|"Moderate"|"Low"|"Poor"|null
   }
 }
 Return exactly {} if this is a general question with no specific training or health data.`;
