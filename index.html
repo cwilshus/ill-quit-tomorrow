@@ -63,7 +63,7 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--tab-h) +
 
 /* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:calc(var(--tab-h) + var(--safe-b));padding-bottom:var(--safe-b);background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:20}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;gap:3px;cursor:pointer;color:var(--muted);transition:color .15s;font-size:10px;font-weight:500;letter-spacing:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;gap:3px;cursor:pointer;color:var(--muted);transition:color .15s;font-size:10px;font-weight:500;letter-spacing:0}
 .nav-item.active{color:var(--accent)}
 .nav-item svg{width:22px;height:22px;stroke-width:1.8}
 
@@ -214,7 +214,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 .shoe-bar-miles{width:55px;text-align:right;color:var(--muted2);font-size:12px}
 
 /* CHAT */
-.chat-area{display:flex;flex-direction:column;gap:10px;padding:12px 16px;min-height:200px;overflow-y:auto;max-height:calc(100dvh - 220px);justify-content:flex-end}
+.chat-area{display:flex;flex-direction:column;gap:10px;padding:12px 16px 80px;min-height:200px;overflow-y:auto;max-height:calc(100dvh - 220px)}
 .chat-msg{max-width:85%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.55}
 .chat-msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
 .chat-msg.ai{align-self:flex-start;background:var(--surface2);color:var(--text);border-bottom-left-radius:4px;border:1px solid var(--border)}
