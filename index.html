@@ -60,6 +60,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 main{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--tab-h) + var(--safe-b) + 12px)}
 .tab-panel{display:none;padding:0 0 16px}
 .tab-panel.active{display:block}
+#tab-plan.active{display:flex;flex-direction:column;overflow:hidden;padding:0}
 
 /* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:calc(var(--tab-h) + var(--safe-b));padding-bottom:var(--safe-b);background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:20}
@@ -2027,6 +2028,10 @@ function switchTab(t) {
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   const panel = document.getElementById('tab-'+t);
   if (panel) panel.classList.add('active');
+  // Santa tab uses flex fill layout — disable main scroll padding; restore for other tabs
+  const mainEl = document.getElementById('main');
+  mainEl.style.overflowY = t==='plan' ? 'hidden' : '';
+  mainEl.style.paddingBottom = t==='plan' ? '0' : '';
   renderTopBar();
   renderBottomNav();
   if (t==='today') renderTodayContent();
@@ -2376,6 +2381,11 @@ Write a brief training plan overview (4–6 sentences). Cover: the philosophy be
 function renderPlanContent() {
   const el = document.getElementById('tab-plan');
 
+  // Exact-fit height: fills viewport minus top bar and bottom nav, no dead space
+  const topBarH = document.getElementById('topBar').offsetHeight || 56;
+  const navH = document.getElementById('bottomNav').offsetHeight || 60;
+  el.style.height = (window.innerHeight - topBarH - navH) + 'px';
+
   const msgs = S.chatHistory.map(m=>`
     <div class="chat-msg ${m.role==='user'?'user':'ai'}">${m.role==='user'?m.content.replace(/\n/g,'<br>'):fmtAI(m.content)}</div>
   `).join('');
@@ -2389,13 +2399,13 @@ function renderPlanContent() {
 
   el.innerHTML = `
     <input type="file" id="chatFileInput" accept="image/*" multiple style="display:none" onchange="addChatImgs(this)">
-    <div class="chat-area" id="chatArea">
+    <div class="chat-area" id="chatArea" style="flex:1;max-height:none;padding-bottom:24px">
       ${S.chatHistory.length===0?`<div class="empty-state">
         <div><img src="${SANTA_ICON_64}" width="60" height="60" style="border-radius:4px"></div>
         <div class="empty-state-text" style="margin-top:8px">Coach Santa is here.<br>Tell her about your session, share a screenshot, or ask anything.</div>
       </div>`:msgs}
     </div>
-    <div class="chat-input-row" style="flex-direction:column;gap:0;align-items:stretch">
+    <div class="chat-input-row" style="flex-direction:column;gap:0;align-items:stretch;position:relative;bottom:auto;flex-shrink:0">
       ${imgPreviews?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)">${imgPreviews}</div>`:''}
       <div style="display:flex;gap:8px;align-items:flex-end">
       <button class="btn btn-secondary btn-icon" onclick="document.getElementById('chatFileInput').click()" title="Attach photos" style="flex-shrink:0">
