@@ -1271,22 +1271,34 @@ function renderDayView(d) {
 
   // 2b. Sessions divider + cards
   const sessions = log?.garmin?.sessions || [];
-  if (sessions.length) {
+  const advice = S.summaries[d+'-advice'];
+  const planDesc = getPlanForDate(d);
+
+  // Show TODAY'S SESSIONS section if there are logged sessions OR a plan for this date
+  if (sessions.length || planDesc) {
     html += `<div style="display:flex;align-items:center;gap:10px;margin:16px 16px 10px">
       <div style="flex:1;height:1px;background:var(--border)"></div>
       <span style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase">Today's Sessions</span>
       <div style="flex:1;height:1px;background:var(--border)"></div>
     </div>`;
+
+    if (!sessions.length && planDesc) {
+      // No sessions logged yet — show planned workout card
+      html += `<div class="card" style="margin-bottom:8px;border:1px dashed var(--border)">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Planned</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.5">${planDesc}</div>
+      </div>`;
+    }
   }
-  const advice = S.summaries[d+'-advice'];
-  const planDesc = getPlanForDate(d);
+
   sessions.forEach((s, i) => {
     const key = `sg${i}`;
     const exp = _todayExp.has(key);
     const done = !!s.completed;
-    // Title: plan description (uppercase) for first session, tag for subsequent
     const tag = s.tag || s.sessionType || `Session ${i+1}`;
-    const title = i === 0 && planDesc ? planDesc.toUpperCase() : tag.toUpperCase();
+    const title = tag.toUpperCase();
+    // Show plan description as workout subtitle for first session
+    const workout = (i === 0 && planDesc) ? planDesc : null;
     const parts = [s.manual?.dist?`${s.manual.dist} mi`:'', s.manual?.pace?`${s.manual.pace}/mi`:''].filter(Boolean);
     const meta = parts.join(' · ');
 
@@ -1320,6 +1332,7 @@ function renderDayView(d) {
             </div>
             <span style="font-size:16px;color:var(--muted);line-height:1;margin-left:8px;flex-shrink:0">${exp?'⌃':'⌄'}</span>
           </div>
+          ${workout?`<div style="font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.4">${workout}</div>`:''}
         </div>
       </div>
       ${expandedContent?`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">${expandedContent}</div>`:''}
