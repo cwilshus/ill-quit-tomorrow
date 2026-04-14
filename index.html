@@ -353,6 +353,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────
 const STORE_KEY = 'iqt_v1';
+const APP_VERSION = '20260413-003';
 const MODEL = 'claude-opus-4-5';
 const WORKOUT_TYPES = ['Monostructural','GPP','Strength','Applied Strength','Gross Conditioning','Extra Credit'];
 const FORMATS = ['AMRAP','For Time','EMOM','Rounds','Duration','For Distance','For Weight','Custom'];
@@ -434,6 +435,15 @@ let GB = { date: null, editIdx: null, tag: '', imgs: [], manual: { dist: '', pac
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e) { showToast('Storage full — clear some images'); } autoBackup(); }
 
 function loadState() {
+  // Force reload when a new app version is detected (fixes iOS PWA caching)
+  const storedVer = localStorage.getItem('iqt_appver');
+  if (storedVer && storedVer !== APP_VERSION) {
+    localStorage.setItem('iqt_appver', APP_VERSION);
+    window.location.replace(window.location.pathname + '?v=' + APP_VERSION);
+    return;
+  }
+  localStorage.setItem('iqt_appver', APP_VERSION);
+
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
