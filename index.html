@@ -1304,7 +1304,11 @@ function renderDayView(d) {
 
     let expandedContent = '';
     if (exp) {
-      // Santa says brief (top of expanded area)
+      // Workout description (plan for this day)
+      if (workout) {
+        expandedContent += `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Workout</span><div style="font-size:13px;line-height:1.5;color:var(--text);margin-top:3px">${workout}</div></div>`;
+      }
+      // Santa says brief
       if (advice === 'loading') {
         expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
       } else if (advice) {
