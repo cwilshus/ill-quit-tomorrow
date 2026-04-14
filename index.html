@@ -875,9 +875,9 @@ async function testApiKey() {
 // ─── AI TEXT FORMATTER ───────────────────────────────────────
 function fmtAI(t) {
   if (!t) return '';
-  // Insert paragraph break before ** section headers (handles both \n** and .**  patterns)
-  t = t.replace(/([.!?])\s*\n(\*\*)/g, '$1\n\n$2');
-  t = t.replace(/\n(\*\*)/g, '\n\n$1');
+  // Insert paragraph break before **Header** — handles no-newline, single-newline, and spaced cases
+  t = t.replace(/([.!?])\s*(\*\*[A-Z])/g, '$1\n\n$2');
+  t = t.replace(/\n(\*\*[A-Z])/g, '\n\n$1');
   // Markdown headers → bold block
   t = t.replace(/^#{1,3}\s+(.+)$/gm, '<strong style="display:block;margin:10px 0 3px;font-size:13px">$1</strong>');
   // Bold
@@ -1290,7 +1290,7 @@ function renderDayView(d) {
       if (advice === 'loading') {
         expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
       } else if (advice) {
-        expandedContent += `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px"><img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"> Santa says</span><button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 0;opacity:0.6" onclick="event.stopPropagation();delete S.summaries['${d}-advice'];save();renderTodayContent()">↺ Refresh</button></div><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
+        expandedContent += `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 0;opacity:0.6" onclick="event.stopPropagation();delete S.summaries['${d}-advice'];save();renderTodayContent()">↺ Refresh</button></div><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
       }
       // Session stats
       if (s.manual?.hr) expandedContent += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
@@ -1942,7 +1942,27 @@ function renderTopBar() {
     'Low':      { label:'LOW',      color:'#F97316' },
     'Poor':     { label:'POOR',     color:'var(--red)' },
   };
-  const rl = m.readinessLabel || '';
+  // Estimate readiness: prefer Garmin-extracted label, then sleep score, then HRV
+  function estimateRL(m) {
+    if (m.readinessLabel) return m.readinessLabel;
+    if (m.readinessScore) {
+      if (m.readinessScore >= 95) return 'Prime';
+      if (m.readinessScore >= 75) return 'High';
+      if (m.readinessScore >= 50) return 'Moderate';
+      if (m.readinessScore >= 25) return 'Low';
+      return 'Poor';
+    }
+    if (m.sleepScore) {
+      if (m.sleepScore >= 85) return 'High';
+      if (m.sleepScore >= 70) return 'Moderate';
+      return 'Low';
+    }
+    if (m.hrv === 'green') return 'High';
+    if (m.hrv === 'yellow') return 'Moderate';
+    if (m.hrv === 'red') return 'Poor';
+    return '';
+  }
+  const rl = estimateRL(m);
   const trEntry = TR_MAP[rl];
   const trHtml = trEntry ? `<span style="font-size:10px;font-weight:800;letter-spacing:0.05em;color:${trEntry.color};border:1px solid ${trEntry.color};border-radius:4px;padding:2px 6px">${trEntry.label}</span>` : '';
   document.getElementById('topBar').innerHTML = `
