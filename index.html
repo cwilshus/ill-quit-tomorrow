@@ -1267,10 +1267,17 @@ function renderDayView(d) {
     </div>`;
   }
 
-  // 2b. Sessions (expandable, with completion checkbox)
+  // 2b. Sessions divider + cards
+  const sessions = log?.garmin?.sessions || [];
+  if (sessions.length) {
+    html += `<div style="display:flex;align-items:center;gap:10px;margin:16px 16px 10px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase">Today's Sessions</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>`;
+  }
   const advice = S.summaries[d+'-advice'];
   const planDesc = getPlanForDate(d);
-  const sessions = log?.garmin?.sessions || [];
   sessions.forEach((s, i) => {
     const key = `sg${i}`;
     const exp = _todayExp.has(key);
@@ -2460,7 +2467,7 @@ Return this exact structure (null for anything not clearly stated):
     "notes": "brief note or null"
   },
   "health": {
-    "hrv": "green"|"yellow"|"red"|null, "recovery": 1-5 or null, "sleepScore": number or null,
+    "hrv": "green"|"yellow"|"red"|null, (Garmin HRV labels: Balanced=green, Unbalanced=yellow, Low=red) "recovery": 1-5 or null, "sleepScore": number or null,
     "sleepH": hours or null, "sleepM": minutes or null, "restingHr": bpm or null, "weight": lbs or null,
     "readinessScore": number 0-100 or null, "readinessLabel": "Prime"|"High"|"Moderate"|"Low"|"Poor"|null
   }
