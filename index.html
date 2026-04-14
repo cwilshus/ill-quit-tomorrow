@@ -371,7 +371,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────
 const STORE_KEY = 'iqt_v1';
-const APP_VERSION = '20260414-004';
+const APP_VERSION = '20260414-005';
 const MODEL = 'claude-opus-4-5';
 const WORKOUT_TYPES = ['Monostructural','GPP','Strength','Applied Strength','Gross Conditioning','Extra Credit'];
 const FORMATS = ['AMRAP','For Time','EMOM','Rounds','Duration','For Distance','For Weight','Custom'];
@@ -684,13 +684,13 @@ function splitPlanRunStrengthBlob(afterTitle) {
 
 function formatPlanRunOnlyHtml(runText) {
   const body = escPlanHtml((runText || '').trim());
-  return `<div class="session-card-tiered"><div class="session-section"><div class="session-section-label">RUN</div><div class="session-section-body"><div class="session-line">${body}</div></div></div></div>`;
+  return `<div class="session-card-tiered"><div class="session-section-body"><div class="session-line">${body}</div></div></div>`;
 }
 
 function formatPlanStrengthBlockHtml(strengthText) {
   const parts = (strengthText || '').split(/\s*,\s*/).map(p => p.trim()).filter(Boolean);
   const lines = parts.map(formatLiftLine).map(line => `<div class="session-line">${escPlanHtml(line)}</div>`).join('');
-  return `<div class="session-card-tiered"><div class="session-section"><div class="session-section-label">STRENGTH</div><div class="session-section-body">${lines}</div></div></div>`;
+  return `<div class="session-card-tiered"><div class="session-section-body">${lines}</div></div>`;
 }
 
 function planPreviewRunLine(planDesc, rs) {
@@ -1607,7 +1607,6 @@ function renderDayView(d) {
         const pkS = 'ps' + d.replace(/-/g, '');
         const expR = _todayExp.has(pkR);
         const expS = _todayExp.has(pkS);
-        const anyExp = expR || expS;
         const runCard = `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('${pkR}')">
         <div style="display:flex;align-items:flex-start;gap:10px">
           <div style="width:22px;height:22px;margin-top:1px;border-radius:50%;border:2px solid var(--border);flex-shrink:0"></div>
@@ -1616,10 +1615,9 @@ function renderDayView(d) {
               <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.04em">EASY RUN</span>
               <span style="font-size:16px;color:var(--muted);line-height:1;flex-shrink:0">${expR ? '⌃' : '⌄'}</span>
             </div>
-            ${!expR ? `<div style="font-size:12px;color:var(--muted2);margin-top:4px;line-height:1.45">${escPlanHtml(planPreviewRunLine(planDesc, rs))}</div>` : ''}
           </div>
         </div>
-        ${expR ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">${formatPlanRunOnlyHtml(rs.runText)}</div>` : ''}
+        ${expR ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">${formatPlanRunOnlyHtml(rs.runText)}${adviceBlock}</div>` : ''}
       </div>`;
         const strCard = `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="todayToggle('${pkS}')">
         <div style="display:flex;align-items:flex-start;gap:10px">
@@ -1629,15 +1627,11 @@ function renderDayView(d) {
               <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.04em">STRENGTH</span>
               <span style="font-size:16px;color:var(--muted);line-height:1;flex-shrink:0">${expS ? '⌃' : '⌄'}</span>
             </div>
-            ${!expS ? `<div style="font-size:12px;color:var(--muted2);margin-top:4px;line-height:1.45">${escPlanHtml(planPreviewStrengthLine(rs))}</div>` : ''}
           </div>
         </div>
-        ${expS ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">${formatPlanStrengthBlockHtml(rs.strengthText)}</div>` : ''}
+        ${expS ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">${formatPlanStrengthBlockHtml(rs.strengthText)}${adviceBlock}</div>` : ''}
       </div>`;
         html += runCard + strCard;
-        if (anyExp && adviceBlock) {
-          html += `<div class="card" style="margin-bottom:8px" onclick="event.stopPropagation()">${adviceBlock}</div>`;
-        }
       } else {
         const pk = 'p' + d.replace(/-/g, '');
         const expP = _todayExp.has(pk);
@@ -1645,9 +1639,9 @@ function renderDayView(d) {
         <div style="display:flex;align-items:flex-start;gap:10px">
           <div style="width:22px;height:22px;margin-top:1px;border-radius:50%;border:2px solid var(--border);flex-shrink:0"></div>
           <div style="flex:1;min-width:0">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-              <div style="flex:1;font-size:13px;color:var(--muted2);line-height:1.45;min-width:0">${escPlanHtml(planPreviewOneLine(planDesc))}</div>
-              <span style="font-size:16px;color:var(--muted);line-height:1;flex-shrink:0;padding-top:1px">${expP ? '⌃' : '⌄'}</span>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.04em">Workout</span>
+              <span style="font-size:16px;color:var(--muted);line-height:1;flex-shrink:0">${expP ? '⌃' : '⌄'}</span>
             </div>
           </div>
         </div>
@@ -1697,13 +1691,12 @@ function renderDayView(d) {
       } else if (strengthOnly && planBodySplit) {
         expandedContent += `<div style="margin-bottom:16px">${formatPlanStrengthBlockHtml(planBodySplit.strengthText)}</div>`;
       }
-      // Santa says brief (first row only so two expanded sessions do not duplicate)
-      if (i === 0) {
-        if (advice === 'loading') {
-          expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
-        } else if (advice) {
-          expandedContent += `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
-        }
+      if (advice === 'loading') {
+        expandedContent += `<div class="advice-loading"><div class="spinner"></div></div>`;
+      } else if (advice) {
+        expandedContent += `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">Santa says <img src="${SANTA_ICON_64}" width="13" height="13" style="border-radius:2px;opacity:0.85"></span><div style="font-size:13px;line-height:1.6;color:var(--muted2);margin-top:3px">${fmtAI(advice)}</div></div>`;
+      } else if (isToday && S.settings.apiKey) {
+        expandedContent += `<button class="btn btn-secondary btn-sm" style="margin-top:4px" onclick="event.stopPropagation();getAdvice('${d}')">Get Santa's take</button>`;
       }
       // Session stats
       if (s.manual?.hr) expandedContent += `<div class="text-sm text-muted">Avg HR: ${s.manual.hr} bpm</div>`;
@@ -1727,7 +1720,7 @@ function renderDayView(d) {
             </div>
             <span style="font-size:16px;color:var(--muted);line-height:1;margin-left:8px;flex-shrink:0">${exp?'⌃':'⌄'}</span>
           </div>
-          ${(workout || strengthOnly) && subPreview ? `<div style="font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.45">${escPlanHtml(subPreview)}</div>` : ''}
+          ${exp && (workout || strengthOnly) && subPreview ? `<div style="font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.45">${escPlanHtml(subPreview)}</div>` : ''}
         </div>
       </div>
       ${expandedContent?`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">${expandedContent}</div>`:''}
